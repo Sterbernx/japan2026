@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktywny Planer Podróży do Japonii</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Serene Sakura -->
+    <!-- Application Structure Plan: A single-page application designed for intuitive exploration. The structure is thematic rather than linear. It starts with a 'Dashboard' for a quick overview. The 'Planner Strategiczny' section provides actionable advice on budget and transport. A new 'Mapa Atrakcji' section provides a visual overview of key locations. The core is the 'Interaktywny Plan Podróży', a filterable timeline allowing users to view the itinerary by region or interest. This structure empowers the user to understand the trip's components and explore details based on their priorities. -->
+    <!-- Visualization & Content Choices: 
+        - Budget Breakdown (Goal: Inform): An interactive doughnut chart (Chart.js) visualizes cost categories for 3 people. Interaction: Hovering over segments reveals details. Justification: More engaging and easier to grasp than a simple table.
+        - Interactive Map (Goal: Organize/Explore): A custom map drawn on an HTML Canvas with JS. This removes external dependencies and ensures the map always loads. Pins are accurately placed to represent all key locations in the itinerary. Interaction: Hovering near pins triggers a tooltip with attraction info and relevant travel days, handled via JS hit detection. Justification: Provides a clear, reliable, and accurate geographic context to the itinerary.
+        - JR Pass Analysis (Goal: Compare): A clear HTML/Tailwind table compares JR Pass vs. individual ticket costs for 3 people. Interaction: None needed, clarity is key. Justification: Direct comparison is the most effective way to convey the cost-saving conclusion.
+        - Itinerary (Goal: Organize/Explore): A dynamic, card-based grid (HTML/Tailwind/JS). Interaction: Users can filter days by region or interest tags. Justification: This non-linear approach allows users to focus on parts of the trip most relevant to them.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #3f3f46;
+        }
+        .active-nav {
+            color: #DC2626;
+            border-bottom: 2px solid #DC2626;
+        }
+        .inactive-nav {
+            color: #71717a;
+            border-bottom: 2px solid transparent;
+        }
+        .btn-filter {
+            transition: all 0.3s ease;
+        }
+        .active-filter {
+            background-color: #DC2626;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .inactive-filter {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        .day-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            will-change: transform;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: auto;
+            max-height: 400px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .tag-culture { background-color: #DBEAFE; color: #1E40AF; }
+        .tag-nature { background-color: #D1FAE5; color: #065F46; }
+        .tag-pop { background-color: #F3E8FF; color: #5B21B6; }
+        .tag-food { background-color: #FEF3C7; color: #92400E; }
+        .tag-travel { background-color: #E5E7EB; color: #374151; }
+        
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            aspect-ratio: 16 / 10;
+            border-radius: 1rem;
+            border: 2px solid #fee2e2;
+            background-color: #eff6ff;
+        }
+        #japan-map-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        #map-tooltip {
+            position: absolute;
+            display: none;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 10;
+            white-space: normal;
+            max-width: 250px;
+            line-height: 1.4;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-red-700 mb-2">Japonia w Pełni Rozkwitu</h1>
+            <p class="text-lg text-gray-600">Interaktywny Planer Podróży: 21 marca – 5 kwietnia 2025</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center border-b border-gray-200 mb-12">
+            <button data-section="dashboard" class="nav-btn active-nav text-lg font-semibold py-4 px-6">Pulpit</button>
+            <button data-section="planner" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Planner Strategiczny</button>
+            <button data-section="map" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Mapa Podróży</button>
+            <button data-section="itinerary" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Interaktywny Plan</button>
+        </nav>
+
+        <main>
+            <section id="dashboard" class="space-y-12">
+                <div class="text-center bg-red-50 border border-red-200 rounded-2xl p-8">
+                    <h2 class="text-3xl font-bold text-red-800 mb-4">Witaj w Twoim Centrum Planowania Podróży!</h2>
+                    <p class="text-gray-700 max-w-3xl mx-auto">
+                        Ta aplikacja przekształca Twój plan podróży w interaktywne doświadczenie. Użyj nawigacji, aby przełączać się między pulpitem, analizą strategiczną, mapą a szczegółowym, filtrowalnym harmonogramem. Odkryj kluczowe dane, zoptymalizuj logistykę i zwizualizuj każdy dzień swojej przygody w Kraju Kwitnącej Wiśni.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-xl mb-3 text-red-700">✈️ Koszt Lotów</h3>
+                        <p class="text-3xl font-semibold">18 900 PLN</p>
+                        <p class="text-gray-500">dla 3 osób (6300 PLN/os.)</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-xl mb-3 text-red-700">💰 Budżet na Miejscu</h3>
+                        <p class="text-3xl font-semibold">~29 100 PLN</p>
+                        <p class="text-gray-500">dla 3 osób, bez lotów</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-xl mb-3 text-red-700">📊 Całkowity Budżet</h3>
+                        <p class="text-3xl font-semibold">~48 000 PLN</p>
+                        <p class="text-gray-500">dla 3 osób, z lotami</p>
+                    </div>
+                </div>
+                 <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 md:col-span-2 lg:col-span-3">
+                    <h3 class="font-bold text-2xl mb-4 text-center text-red-700">Podział Szacunkowych Kosztów na Miejscu (dla 3 osób)</h3>
+                    <div class="chart-container">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                     <p class="text-center text-xs text-gray-500 mt-4">Przeliczono po kursie 1 USD = 4,00 PLN. Koszty w JPY w sekcji "Planner" pozostają bez zmian dla precyzji.</p>
+                </div>
+            </section>
+
+            <section id="planner" class="hidden space-y-12">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-3xl font-bold text-red-800 mb-6 text-center">Planner Strategiczny: Optymalizacja Podróży</h2>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-2xl font-semibold mb-4 text-red-700">🚄 Transport: JR Pass vs Bilety Indywidualne</h3>
+                            <p class="mb-4 text-gray-700">Po podwyżce cen w październiku 2023, Japan Rail Pass rzadko jest opłacalny. Analiza planu dla 3 osób jednoznacznie wskazuje na korzyść zakupu biletów indywidualnych.</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr>
+                                            <th class="border-b-2 border-red-200 p-3 font-semibold">Opcja (dla 3 osób)</th>
+                                            <th class="border-b-2 border-red-200 p-3 font-semibold text-right">Szacowany Koszt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="bg-red-50">
+                                            <td class="p-3">14-dniowy Japan Rail Pass</td>
+                                            <td class="p-3 text-right font-mono">240,000 JPY</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3">Suma biletów indywidualnych (Wasza trasa)</td>
+                                            <td class="p-3 text-right font-mono">~99,720 JPY</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="font-bold bg-green-50">
+                                            <td class="p-3">Oszczędność</td>
+                                            <td class="p-3 text-right font-mono text-green-700">~140,280 JPY</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-600"><strong>Rekomendacja:</strong> Zamiast JR Pass, zainwestujcie w regionalne karnety jak <strong class="text-red-600">Hakone Free Pass</strong> i <strong class="text-red-600">Enoshima Kamakura Free Pass</strong>, które oferują znaczne oszczędności i wygodę w swoich regionach.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-semibold mb-4 text-red-700">🏨 Zakwaterowanie: Strategia Hybrydowa</h3>
+                            <p class="mb-4 text-gray-700">Wasz plan obejmuje hotele o różnym standardzie. Aby połączyć unikalne doświadczenie z komfortem, rozważcie strategię hybrydową:</p>
+                            <ul class="space-y-4">
+                                <li class="flex items-start">
+                                    <span class="text-red-500 mr-3 mt-1">●</span>
+                                    <div>
+                                        <h4 class="font-semibold">Doświadczenie Kapsuły (2-3 noce)</h4>
+                                        <p class="text-gray-600">Rozpocznijcie od noclegu w nowoczesnym hotelu kapsułowym, jak The Global Hotel Tokyo, aby poczuć unikalny klimat Japonii i zaoszczędzić na budżecie.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-red-500 mr-3 mt-1">●</span>
+                                    <div>
+                                        <h4 class="font-semibold">Komfortowy Hotel (reszta pobytu)</h4>
+                                        <p class="text-gray-600">Na pozostałą część podróży wybierzcie hotel o wyższym standardzie, np. Hotel Metropolitan Tokyo Ikebukuro, aby zapewnić sobie komfort i regenerację sił.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                             <p class="mt-4 text-sm text-gray-600"><strong>Korzyść:</strong> Taka strategia pozwala zrównoważyć budżet, nie rezygnując ani z autentycznych doświadczeń, ani z wygody niezbędnej podczas intensywnej podróży.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="map" class="hidden space-y-12">
+                 <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-red-800 mb-4">Interaktywna Mapa Podróży</h2>
+                    <p class="text-gray-700 max-w-3xl mx-auto">
+                        Najedź kursorem na punkty na mapie, aby zobaczyć kluczowe miejsca z Waszego planu podróży. To wizualny przewodnik po przygodzie w regionach Kanto i Kansai.
+                    </p>
+                </div>
+                <div class="map-container" id="map-container">
+                    <canvas id="japan-map-canvas"></canvas>
+                    <div id="map-tooltip"></div>
+                </div>
+            </section>
+
+            <section id="itinerary" class="hidden">
+                 <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-red-800 mb-4">Interaktywny Plan Podróży</h2>
+                    <p class="text-gray-700 max-w-3xl mx-auto">
+                        Filtrujcie dni podróży według regionu lub Waszych zainteresowań, aby skupić się na tym, co Was najbardziej ciekawi. Każda karta to jeden dzień pełen przygód.
+                    </p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-10">
+                    <button class="btn-filter active-filter font-semibold py-2 px-5 rounded-full" data-filter="all">Wszystko</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="kanto">📍 Region Kanto</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="kansai">📍 Region Kansai</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="culture">🏛️ Kultura i Historia</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="nature">🌳 Natura i Widoki</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="pop">🎮 Popkultura</button>
+                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="food">🍜 Kulinaria</button>
+                </div>
+                <div id="itinerary-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = {
+                dashboard: document.getElementById('dashboard'),
+                planner: document.getElementById('planner'),
+                map: document.getElementById('map'),
+                itinerary: document.getElementById('itinerary')
+            };
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const sectionId = button.dataset.section;
+
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('active-nav');
+                        btn.classList.add('inactive-nav');
+                    });
+                    button.classList.add('active-nav');
+                    button.classList.remove('inactive-nav');
+
+                    Object.values(sections).forEach(section => {
+                        section.classList.add('hidden');
+                    });
+                    sections[sectionId].classList.remove('hidden');
+                    
+                    if (sectionId === 'map') {
+                        drawMap();
+                    }
+                });
+            });
+
+            const budgetData = {
+                labels: ['Zakwaterowanie', 'Wyżywienie', 'Transport Międzymiastowy', 'Transport Lokalny', 'Atrakcje i Aktywności'],
+                datasets: [{
+                    label: 'Szacowany Budżet',
+                    data: [16380, 7680, 2952, 912, 1332],
+                    backgroundColor: [
+                        '#EF4444',
+                        '#F97316',
+                        '#FBBF24',
+                        '#84CC16',
+                        '#3B82F6'
+                    ],
+                    borderColor: '#FDFBF8',
+                    borderWidth: 4,
+                    hoverOffset: 4
+                }]
+            };
+
+            const budgetChartCtx = document.getElementById('budgetChart').getContext('2d');
+            new Chart(budgetChartCtx, {
+                type: 'doughnut',
+                data: budgetData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    family: 'Inter'
+                                },
+                                color: '#3f3f46',
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const itineraryData = [
+                { day: 1, date: '21.03', title: 'Podróż i Przyjazd', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Wylot z Warszawy, przylot do Tokio, transfer do hotelu i wieczorny spacer po Shinjuku.' },
+                { day: 2, date: '22.03', title: 'Asakusa i Akihabara', location: 'Tokio', tags: ['culture', 'pop', 'kanto'], description: 'Zwiedzanie świątyni Sensō-ji, a po południu zanurzenie się w świecie elektroniki i popkultury w Akihabarze.' },
+                { day: 3, date: '23.03', title: 'Shibuya i Harajuku', location: 'Tokio', tags: ['culture', 'pop', 'kanto'], description: 'Oglądanie słynnego skrzyżowania w Shibuyi, spacer po modnej ulicy Takeshita i wyciszenie w świątyni Meiji Jingu.' },
+                { day: 4, date: '24.03', title: 'Ikebukuro i Nakameguro', location: 'Tokio', tags: ['pop', 'nature', 'kanto'], description: 'Eksploracja Sunshine City w Ikebukuro i podziwianie kwitnących wiśni wzdłuż rzeki w Nakameguro.' },
+                { day: 5, date: '25.03', title: 'Kamakura', location: 'Wycieczka z Tokio', tags: ['culture', 'nature', 'kanto'], description: 'Całodniowa wycieczka do dawnej stolicy shogunatu. Zwiedzanie świątyń Hasedera i Kencho-ji.' },
+                { day: 6, date: '26.03', title: 'Jokohama i Enoshima', location: 'Wycieczka z Tokio', tags: ['culture', 'nature', 'kanto'], description: 'Spacer po nowoczesnym porcie w Jokohamie, a następnie odkrywanie morskich jaskiń na wyspie Enoshima.' },
+                { day: 7, date: '27.03', title: 'Hakone i Onsen', location: 'Hakone', tags: ['nature', 'kanto'], description: 'Przejazd do Hakone, rejs po jeziorze Ashi z widokiem na Fuji i relaksująca kąpiel w gorących źródłach.' },
+                { day: 8, date: '28.03', title: 'Przyjazd do Kioto', location: 'Kioto', tags: ['travel', 'kansai'], description: 'Przejazd shinkansenem do Kioto, zakwaterowanie i pierwszy spacer po dawnej stolicy.' },
+                { day: 9, date: '29.03', title: 'Świątynie Kioto (Wschód)', location: 'Kioto', tags: ['culture', 'kansai'], description: 'Wizyta w słynnej świątyni Kiyomizu-dera i spacer po historycznej dzielnicy Higashiyama.' },
+                { day: 10, date: '30.03', title: 'Filozoficzna Ścieżka', location: 'Kioto', tags: ['culture', 'nature', 'kansai'], description: 'Spacer Ścieżką Filozofa od Srebrnego Pawilonu (Ginkakuji) i zwiedzanie świątyni Sanjūsangendō.' },
+                { day: 11, date: '31.03', title: 'Gion i Kuchnia Kaiseki', location: 'Kioto', tags: ['culture', 'food', 'kansai'], description: 'Odkrywanie dzielnicy gejsz Gion i kulinarna uczta w formie tradycyjnej kolacji kaiseki.' },
+                { day: 12, date: '01.04', title: 'Warsztaty i Degustacje', location: 'Tokio', tags: ['culture', 'food', 'kanto'], description: 'Powrót do Tokio. Udział w warsztatach tworzenia pałeczek i degustacja sake lub japońskiej whisky.' },
+                { day: 13, date: '02.04', title: 'Dzień Wolny', location: 'Tokio', tags: ['pop', 'nature', 'kanto'], description: 'Czas na własne odkrycia: wycieczka do Nary, wizyta w muzeum teamLab Borderless lub relaks w onsenie.' },
+                { day: 14, date: '03.04', title: 'Ostatnie Zakupy', location: 'Tokio', tags: ['culture', 'kanto'], description: 'Spacer po luksusowej Ginzie i zakupy tradycyjnych pamiątek na Aoyama Square.' },
+                { day: 15, date: '04.04', title: 'Refleksja i Pakowanie', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Ostatni spacer po ulubionym parku, pakowanie i pożegnalna kolacja.' },
+                { day: 16, date: '05.04', title: 'Powrót do Polski', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Transfer na lotnisko i wylot do Warszawy.' }
+            ];
+
+            const itineraryGrid = document.getElementById('itinerary-grid');
+            const filterButtons = document.querySelectorAll('.btn-filter');
+
+            const renderItinerary = (filter = 'all') => {
+                itineraryGrid.innerHTML = '';
+                const filteredData = itineraryData.filter(day => filter === 'all' || day.tags.includes(filter));
+                
+                filteredData.forEach(day => {
+                    const card = document.createElement('div');
+                    card.className = 'day-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col';
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start mb-3">
+                                <p class="text-sm font-bold text-red-600">Dzień ${day.day}</p>
+                                <p class="text-sm text-gray-500">${day.date}</p>
+                            </div>
+                            <h4 class="text-xl font-bold mb-2">${day.title}</h4>
+                            <p class="text-sm text-gray-500 mb-4">📍 ${day.location}</p>
+                            <p class="text-gray-700 text-sm mb-4">${day.description}</p>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-gray-100">
+                            ${day.tags.map(tag => `<span class="tag tag-${tag.replace('kanto', 'travel').replace('kansai', 'travel')}">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`).join(' ')}
+                        </div>
+                    `;
+                    itineraryGrid.appendChild(card);
+                });
+            };
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('active-filter');
+                        btn.classList.add('inactive-filter');
+                    });
+                    button.classList.add('active-filter');
+                    button.classList.remove('inactive-filter');
+                    renderItinerary(button.dataset.filter);
+                });
+            });
+
+            renderItinerary();
+            
+            const mapContainer = document.getElementById('map-container');
+            const canvas = document.getElementById('japan-map-canvas');
+            const tooltip = document.getElementById('map-tooltip');
+            const ctx = canvas.getContext('2d');
+            
+            const attractions = [
+                { name: 'Tokio', description: 'Główne atrakcje: Asakusa, Akihabara, Shibuya, Shinjuku, Ginza.<br><b>Dni: 1-4, 12-16</b>', x: 0.81, y: 0.56 },
+                { name: 'Jokohama', description: 'Nowoczesne miasto portowe, Chinatown, Minato Mirai.<br><b>Dzień: 6</b>', x: 0.82, y: 0.60 },
+                { name: 'Kamakura & Enoshima', description: 'Wielki Budda, świątynie i malownicza wyspa.<br><b>Dzień: 5 & 6</b>', x: 0.80, y: 0.65 },
+                { name: 'Hakone', description: 'Górski kurort z widokiem na Fuji i gorącymi źródłami.<br><b>Dzień: 7</b>', x: 0.75, y: 0.68 },
+                { name: 'Kioto', description: 'Dawna stolica, serce tradycji: Gion, Fushimi Inari, Kiyomizu-dera.<br><b>Dni: 8-11</b>', x: 0.56, y: 0.65 },
+                { name: 'Nara (opcjonalnie)', description: 'Wielki Budda w Todai-ji i wolno żyjące jelenie.<br><b>Dzień: 13</b>', x: 0.59, y: 0.68 }
+            ];
+
+            const islandPaths = {
+                honshu: [
+                    {x:0.85,y:0.52},{x:0.8,y:0.45},{x:0.75,y:0.4},{x:0.65,y:0.35},{x:0.55,y:0.3},{x:0.45,y:0.35},{x:0.4,y:0.45},{x:0.45,y:0.55},{x:0.5,y:0.6},{x:0.55,y:0.65},{x:0.52,y:0.75},{x:0.58,y:0.8},{x:0.65,y:0.75},{x:0.75,y:0.7},{x:0.82,y:0.6}
+                ],
+                hokkaido: [
+                    {x:0.8,y:0.1},{x:0.9,y:0.15},{x:0.85,y:0.3},{x:0.75,y:0.25}
+                ],
+                kyushu: [
+                    {x:0.2,y:0.8},{x:0.3,y:0.7},{x:0.4,y:0.85},{x:0.3,y:0.95}
+                ],
+                shikoku: [
+                    {x:0.4,y:0.75},{x:0.48,y:0.72},{x:0.5,y:0.8},{x:0.42,y:0.82}
+                ]
+            };
+
+            function drawMap() {
+                const rect = mapContainer.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#d4e4d4';
+                ctx.strokeStyle = '#8ab68a';
+                ctx.lineWidth = 2;
+
+                for (const island in islandPaths) {
+                    const path = islandPaths[island];
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x * canvas.width, path[0].y * canvas.height);
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].x * canvas.width, path[i].y * canvas.height);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                attractions.forEach(att => {
+                    ctx.beginPath();
+                    ctx.arc(att.x * canvas.width, att.y * canvas.height, 8, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = '#DC2626';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'white';
+                    ctx.stroke();
+                });
+            }
+
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                let hovered = false;
+
+                attractions.forEach(att => {
+                    const pinX = att.x * canvas.width;
+                    const pinY = att.y * canvas.height;
+                    const distance = Math.sqrt(Math.pow(mouseX - pinX, 2) + Math.pow(mouseY - pinY, 2));
+
+                    if (distance < 12) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.opacity = '1';
+                        tooltip.innerHTML = `<strong>${att.name}</strong><br>${att.description}`;
+                        tooltip.style.left = `${e.clientX - rect.left + 15}px`;
+                        tooltip.style.top = `${e.clientY - rect.top + 15}px`;
+                        hovered = true;
+                    }
+                });
+
+                if (!hovered) {
+                    tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        if (tooltip.style.opacity === '0') {
+                           tooltip.style.display = 'none';
+                        }
+                    }, 200);
+                }
+            });
+
+            window.addEventListener('resize', drawMap);
+            
+            if (sections.map.classList.contains('hidden') === false) {
+                drawMap();
+            }
+        });
+
+    </script>
+</body>
+</html>
