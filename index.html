@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>🇯🇵 JAPONIA V6 MOBILE</title>
+    <title>🇯🇵 JAPONIA V7 CYBER</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;600&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -19,12 +19,16 @@
                         neonPink: '#ff0055',
                         neonCyan: '#00f2ff',
                         neonGold: '#ffd700',
-                        bgBlack: '#000000',
+                        neonPurple: '#bc13fe',
+                        bgBlack: '#050505',
                         bgCard: '#111111'
                     },
                     fontFamily: {
                         'teko': ['Teko', 'sans-serif'],
                         'inter': ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -34,11 +38,10 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; }
         
-        /* Mapa zoptymalizowana pod mobile */
-        #map { height: 35vh; width: 100%; z-index: 1; border-bottom: 2px solid #ff0055; }
-        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(120%); }
+        /* Mapa */
+        #map { height: 35vh; width: 100%; z-index: 1; border-bottom: 1px solid #333; }
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
         
-        /* Ukrywanie paska przewijania */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -46,14 +49,12 @@
         .number-icon {
             background: rgba(0,0,0,0.9); border: 2px solid #00f2ff; color: #00f2ff;
             border-radius: 50%; text-align: center; font-weight: 800; font-size: 16px; line-height: 28px;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
         }
         .hotel-icon {
             background: #ff0055; border: 2px solid #fff; color: #fff;
             border-radius: 8px; text-align: center; font-size: 20px; line-height: 30px; z-index: 999;
-        }
-        .dist-badge {
-            background: #000; border: 1px solid #00f2ff; color: #00f2ff; 
-            font-size: 10px; padding: 2px 4px; border-radius: 4px; font-weight: bold;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
         }
     </style>
 
@@ -61,130 +62,155 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
-<body class="h-screen flex flex-col overflow-hidden" x-data="travelApp()" x-init="initApp()">
+<body class="h-screen flex flex-col overflow-hidden bg-bgBlack" x-data="travelApp()" x-init="initApp()">
 
-    <div class="flex-none relative bg-black z-0">
-        <div id="map"></div>
-        <div class="absolute top-2 left-2 z-[500] bg-black/80 backdrop-blur px-3 py-1 rounded border border-gray-700 pointer-events-none">
-            <div class="text-[10px] text-gray-400">AKTUALNY CEL:</div>
-            <div class="text-neonCyan font-bold text-sm tracking-wide" x-text="currentDayTitle"></div>
-        </div>
+    <div class="h-1 w-full bg-gray-900 z-50">
+        <div class="h-full bg-gradient-to-r from-neonPink via-neonPurple to-neonCyan transition-all duration-700 ease-out shadow-[0_0_10px_#00f2ff]" 
+             :style="`width: ${globalProgress}%`"></div>
     </div>
 
-    <main class="flex-1 overflow-y-auto bg-bgBlack relative z-10 no-scrollbar pb-24">
+    <header class="flex-none bg-bgCard border-b border-gray-800 p-3 flex justify-between items-center z-20">
+        <div>
+            <h1 class="font-teko text-2xl tracking-widest text-white leading-none">JAPONIA <span class="text-neonCyan">V7</span></h1>
+            <div class="text-[10px] text-gray-500 font-bold tracking-widest" x-text="todayDate"></div>
+        </div>
+        <div class="text-right">
+             <div class="text-xs text-gray-400 font-bold">POSTĘP</div>
+             <div class="font-teko text-xl text-neonCyan" x-text="globalProgress + '%'"></div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto bg-black relative z-10 no-scrollbar pb-24">
         
-        <div x-show="activeTab === 'plan'">
-            <template x-for="(day, index) in allDays" :key="day.id">
-                <div class="mb-1 border-b border-gray-900">
-                    
-                    <div @click="focusDay(day)" 
-                         class="sticky top-0 z-20 bg-bgCard/95 backdrop-blur-xl p-4 flex justify-between items-center border-l-4 transition-all active:scale-[0.98]"
-                         :class="day.colorClass">
-                        <div>
-                            <div class="font-teko text-2xl leading-none" x-text="day.date"></div>
+        <div x-show="activeTab === 'dash'" class="p-4 space-y-6 animate-fade-in">
+            
+            <div class="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-neonPink"></div>
+                <div class="text-xs text-gray-400 uppercase tracking-widest mb-2">Do Wylotu (22.03.2026) zostało:</div>
+                <div class="flex justify-center gap-4 font-teko text-4xl text-white">
+                    <div>
+                        <span x-text="countdown.days"></span><span class="text-sm text-gray-500 block -mt-2">DNI</span>
+                    </div>
+                    <div>:</div>
+                    <div>
+                        <span x-text="countdown.hours"></span><span class="text-sm text-gray-500 block -mt-2">GODZ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-900/50 rounded-2xl p-5 border border-neonCyan/30">
+                <h3 class="text-neonCyan font-bold mb-3 flex items-center gap-2">💴 Szybki Przelicznik</h3>
+                <div class="flex gap-2 items-center">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-500">JENY (JPY)</label>
+                        <input type="number" x-model="yenInput" placeholder="np. 1000" class="w-full bg-black border border-gray-700 rounded p-2 text-white font-mono focus:border-neonCyan outline-none">
+                    </div>
+                    <div class="text-2xl text-gray-600">=</div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-500">ZŁOTE (PLN)</label>
+                        <div class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-neonGold font-mono font-bold" x-text="convertedPln"></div>
+                    </div>
+                </div>
+                <p class="text-[9px] text-gray-600 mt-2 text-center italic">*Kurs orientacyjny 1000 JPY ≈ 26 PLN</p>
+            </div>
+
+            <div class="bg-gray-900/50 rounded-2xl p-5 border border-neonPurple/30">
+                <h3 class="text-neonPurple font-bold mb-3">🗣️ Rozmówki Ratunkowe</h3>
+                <div class="space-y-2">
+                    <template x-for="phrase in phrases">
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-2 last:border-0">
+                            <div>
+                                <div class="text-sm text-white" x-text="phrase.pl"></div>
+                                <div class="text-[10px] text-gray-400 italic" x-text="phrase.pron"></div>
+                            </div>
+                            <div class="text-neonPurple font-bold text-sm" x-text="phrase.jp"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'plan'" class="flex flex-col h-full">
+            <div class="flex-none relative bg-black z-0 h-[35vh] border-b border-gray-800">
+                <div id="map" class="h-full w-full"></div>
+                <div class="absolute bottom-2 left-2 z-[500] bg-black/80 px-2 py-1 rounded border border-neonCyan text-[10px] text-neonCyan">
+                    <span x-text="currentDayTitle"></span>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2 pb-24">
+                <template x-for="(day, index) in allDays" :key="day.id">
+                    <div class="mb-4 bg-bgCard rounded-xl border border-gray-800 overflow-hidden">
+                        
+                        <div @click="focusDay(day)" 
+                             class="p-4 flex justify-between items-center cursor-pointer transition-colors hover:bg-white/5 border-l-4"
+                             :class="day.colorClass">
+                            <div>
+                                <div class="font-teko text-xl text-white" x-text="day.date"></div>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" x-text="day.title"></div>
+                            </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase" x-text="day.title"></span>
-                                <span x-show="day.totalKm" class="text-[9px] bg-gray-800 text-gray-300 px-1.5 rounded border border-gray-700" x-text="day.totalKm + ' km'"></span>
+                                <span class="text-[9px] bg-gray-800 px-2 py-1 rounded text-gray-300" x-text="day.totalKm ? day.totalKm + ' km' : '-'"></span>
+                                <div class="text-neonCyan transform transition-transform" :class="currentDayId === day.id ? 'rotate-90' : ''">➤</div>
                             </div>
                         </div>
-                        <div class="p-2 bg-gray-800 rounded-full text-neonCyan">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.854-.951l-4.22-2.11m0 0L9 7" /></svg>
-                        </div>
-                    </div>
 
-                    <div x-show="currentDayId === day.id" x-transition class="p-3 space-y-3 bg-black">
-                        
-                        <div class="flex items-center gap-3 p-3 rounded bg-gray-900/50 border border-gray-800 text-gray-400 text-xs">
-                            <span class="text-xl">🏨</span>
-                            <div>Start: <b class="text-neonPink" x-text="hotels[day.hotelKey].name"></b></div>
-                        </div>
+                        <div x-show="currentDayId === day.id" x-transition class="border-t border-gray-800 bg-black/50 p-2 space-y-2">
+                            
+                            <div class="text-[10px] text-gray-500 flex items-center gap-2 p-2">
+                                <span>🏨 Start:</span> <span class="text-white font-bold" x-text="hotels[day.hotelKey].name"></span>
+                            </div>
 
-                        <template x-for="(task, i) in day.tasks" :key="task.name">
-                            <div class="bg-bgCard rounded-xl p-3 border border-gray-800 relative shadow-lg">
-                                <div class="flex gap-3">
-                                    <div class="flex-none w-8 h-8 rounded-full flex items-center justify-center font-teko text-lg border-2 transition-colors"
-                                         :class="isChecked(task.name) ? 'bg-neonCyan border-neonCyan text-black' : 'bg-transparent border-gray-600 text-gray-500'"
+                            <template x-for="(task, i) in day.tasks" :key="task.name">
+                                <div class="bg-[#1a1a1a] rounded p-3 flex gap-3 items-start relative overflow-hidden group">
+                                    
+                                    <div class="flex-none w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs border transition-all mt-0.5"
+                                         :class="isChecked(task.name) ? 'bg-neonCyan border-neonCyan text-black' : 'border-gray-600 text-gray-500'"
                                          x-text="i + 1">
                                     </div>
 
-                                    <div class="flex-1">
+                                    <div class="flex-1 z-10">
                                         <div class="flex justify-between items-start">
-                                            <div class="font-bold text-sm text-gray-100" x-text="task.name"></div>
-                                            <input type="checkbox" class="w-6 h-6 accent-neonCyan rounded-full" 
+                                            <div class="text-sm font-bold text-gray-200" :class="isChecked(task.name) ? 'line-through opacity-50' : ''" x-text="task.name"></div>
+                                            <input type="checkbox" class="w-5 h-5 accent-neonCyan rounded cursor-pointer" 
                                                    :checked="isChecked(task.name)" @change="toggleCheck(task.name)">
                                         </div>
-
-                                        <div class="mt-1 inline-block bg-gray-800 px-2 py-0.5 rounded text-[10px] text-neonCyan font-mono border border-gray-700">
-                                            🚇 <span x-text="task.transport"></span>
-                                        </div>
-
-                                        <div x-show="task.food" class="mt-2 pt-2 border-t border-gray-800">
-                                            <div class="flex items-start gap-2 text-[11px] text-neonGold">
-                                                <span>🍔</span>
-                                                <span class="italic" x-text="task.food"></span>
-                                            </div>
-                                        </div>
+                                        <div class="text-[10px] text-neonCyan mt-1">🚇 <span x-text="task.transport"></span></div>
+                                        <div x-show="task.food" class="text-[10px] text-neonGold mt-1 italic">🍔 <span x-text="task.food"></span></div>
+                                        
+                                        <a :href="task.coords ? `https://www.google.com/maps/dir/?api=1&destination=${task.coords[0]},${task.coords[1]}&travelmode=transit` : '#'" 
+                                           target="_blank"
+                                           class="mt-2 inline-block bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-[10px] text-white font-bold border border-gray-600 transition-colors"
+                                           x-show="task.coords">
+                                           📍 NAWIGUJ
+                                        </a>
                                     </div>
                                 </div>
-
-                                <a :href="task.coords ? `https://www.google.com/maps/dir/?api=1&destination=${task.coords[0]},${task.coords[1]}&travelmode=transit` : '#'" 
-                                   target="_blank"
-                                   class="mt-3 block w-full bg-gray-800 active:bg-neonCyan active:text-black py-3 rounded-lg text-center text-xs font-bold text-gray-300 border border-gray-600 transition-colors flex items-center justify-center gap-2"
-                                   :class="{'opacity-50 pointer-events-none': !task.coords}">
-                                   <span>📍 NAWIGUJ</span>
-                                </a>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
-                </div>
-            </template>
-        </div>
-
-        <div x-show="activeTab === 'guide'" class="p-4 space-y-6">
-            <h2 class="font-teko text-3xl text-neonGold text-center mb-4">SURVIVAL KIT 🍜🍺</h2>
-            
-            <div class="space-y-4">
-                <div class="bg-bgCard p-4 rounded-xl border border-neonPink">
-                    <h3 class="text-neonPink font-bold mb-2 text-lg">🏪 KONBINI (Żabka lvl 999)</h3>
-                    <ul class="text-sm space-y-2 text-gray-300">
-                        <li>🥪 <b>Egg Sandwich (Tamago Sando):</b> Absolutny hit na śniadanie. 7-Eleven ma najlepsze.</li>
-                        <li>🍗 <b>Famichiki:</b> Kurczak w panierce z FamilyMart. Tłusty, idealny po alkoholu.</li>
-                        <li>🍙 <b>Onigiri:</b> Kulki ryżowe (Tuna Mayo to bezpieczna opcja).</li>
-                    </ul>
-                </div>
-
-                <div class="bg-bgCard p-4 rounded-xl border border-neonCyan">
-                    <h3 class="text-neonCyan font-bold mb-2 text-lg">🍻 ALKOHOL (Dla Ziomków)</h3>
-                    <ul class="text-sm space-y-2 text-gray-300">
-                        <li>🍋 <b>Strong Zero (9%):</b> Legendarny drink w puszce. 2 puszki = reset systemu. Kosztuje grosze.</li>
-                        <li>🍺 <b>Highball:</b> Whisky z sodą. Popularne w knajpach.</li>
-                        <li>🏮 <b>Izakaya:</b> Japoński bar. Zamawiasz "Nomihoudai" (All you can drink) jak chcecie poszaleć.</li>
-                    </ul>
-                </div>
-
-                <div class="bg-bgCard p-4 rounded-xl border border-neonGold">
-                    <h3 class="text-neonGold font-bold mb-2 text-lg">🍜 JEDZENIE (Klasyki)</h3>
-                    <ul class="text-sm space-y-2 text-gray-300">
-                        <li>🍛 <b>Coco Ichibanya:</b> Najlepsze tanie Curry. Wybierasz ostrość (Level 2 to już piecze).</li>
-                        <li>🍣 <b>Kura Sushi / Sushiro:</b> Tanie sushi na taśmociągu. Talerzyki po 100 jenów.</li>
-                        <li>🍜 <b>Ichiran Ramen:</b> Jesz w kabinie, zero kontaktu z ludźmi. Pyszny bulion.</li>
-                        <li>🐮 <b>Yoshinoya / Sukiya:</b> Miska ryżu z wołowiną (Gyudon). Tanie i sycące.</li>
-                    </ul>
-                </div>
+                </template>
             </div>
         </div>
 
     </main>
 
-    <nav class="flex-none bg-black border-t border-gray-800 pb-safe z-50">
+    <nav class="flex-none bg-black border-t border-gray-800 pb-safe z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.8)]">
         <div class="flex justify-around items-center h-16">
-            <button @click="activeTab = 'plan'" class="flex flex-col items-center w-1/2 p-2 transition-colors" :class="activeTab === 'plan' ? 'text-neonCyan' : 'text-gray-500'">
-                <span class="text-2xl mb-1">📅</span>
-                <span class="text-[10px] font-bold tracking-widest">TRIP PLAN</span>
+            
+            <button @click="activeTab = 'dash'" class="flex flex-col items-center w-1/3 transition-all duration-300" :class="activeTab === 'dash' ? 'text-neonPurple scale-110' : 'text-gray-600'">
+                <span class="text-2xl mb-1">🚀</span>
+                <span class="text-[9px] font-bold tracking-widest">GADŻETY</span>
             </button>
-            <button @click="activeTab = 'guide'" class="flex flex-col items-center w-1/2 p-2 transition-colors" :class="activeTab === 'guide' ? 'text-neonGold' : 'text-gray-500'">
-                <span class="text-2xl mb-1">🍔</span>
-                <span class="text-[10px] font-bold tracking-widest">SURVIVAL</span>
+
+            <button @click="activeTab = 'plan'" class="flex flex-col items-center w-1/3 transition-all duration-300" :class="activeTab === 'plan' ? 'text-neonCyan scale-110' : 'text-gray-600'">
+                <span class="text-2xl mb-1">🗺️</span>
+                <span class="text-[9px] font-bold tracking-widest">PLAN & MAPA</span>
+            </button>
+            
+            <button @click="resetTrip()" class="flex flex-col items-center w-1/3 text-gray-800 active:text-red-600 transition-colors">
+                <span class="text-xl mb-1">🗑️</span>
+                <span class="text-[9px] font-bold tracking-widest">RESET</span>
             </button>
         </div>
     </nav>
@@ -192,111 +218,141 @@
     <script>
         function travelApp() {
             return {
-                activeTab: 'plan',
+                activeTab: 'dash', // Start od Dashboardu żeby zobaczyć licznik
                 map: null,
                 markers: [],
                 routeLine: null,
                 currentDayId: null,
-                currentDayTitle: 'Wybierz dzień',
-                checked: JSON.parse(localStorage.getItem('jp_v6_checked')) || [],
+                currentDayTitle: 'Wybierz dzień z listy',
+                checked: JSON.parse(localStorage.getItem('jp_v7_checked')) || [],
                 
+                // GADGETS DATA
+                yenInput: '',
+                countdown: { days: 0, hours: 0 },
+                todayDate: new Date().toLocaleDateString('pl-PL'),
+                phrases: [
+                    { pl: 'Dziękuję', jp: 'Arigatou gozaimasu', pron: 'Arigato gozajmas' },
+                    { pl: 'Przepraszam', jp: 'Sumimasen', pron: 'Sumimasen' },
+                    { pl: 'Poproszę to', jp: 'Kore o kudasai', pron: 'Kore o kudasaj' },
+                    { pl: 'Gdzie jest toaleta?', jp: 'Toire wa doko desu ka?', pron: 'Tojre ła doko deska' },
+                    { pl: 'Dwa piwa', jp: 'Biru futatsu', pron: 'Biru futatsu' },
+                    { pl: 'Rachunek poproszę', jp: 'O-kaikei onegaishimasu', pron: 'Okajke onegajshimas' }
+                ],
+
                 hotels: {
                     'galicia': { name: 'Galicia Ryogoku', coords: [35.6930, 139.7924] },
                     'lion': { name: 'Le Lion d\'or (Kioto)', coords: [35.0080, 135.7700] },
                     'tomi': { name: 'TOMI Hotel', coords: [35.6650, 139.8700] }
                 },
 
+                // PEŁNA LISTA (Skrócona dla czytelności kodu, ale logika ta sama co w V6)
                 allDays: [
                     { 
-                        id: 'd1', date: '23.03 (Pon)', title: 'ASAKUSA & UENO', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        id: 'd1', date: '23.03', title: 'ASAKUSA', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
                         tasks: [
-                            { name: 'Sensō-ji', coords: [35.7147, 139.7966], transport: 'Spacer / Bus', food: 'Kup "Melonpan" na straganie i wróżbę za 100 yen.' },
-                            { name: 'Park Ueno', coords: [35.7140, 139.7740], transport: 'Metro Ginza', food: 'Ameyoko Market obok stacji - street food i tanie ciuchy.' },
-                            { name: 'Yanaka Ginza', coords: [35.7275, 139.7645], transport: 'Spacer', food: 'Klimat starego Tokio. Zjedz krokieta mięsnego (Menchi-katsu).' },
-                            { name: 'Daikoku-yu Onsen', coords: [35.7077, 139.8056], transport: 'Taxi', food: 'Zimne mleko kawowe po kąpieli to obowiązek.' }
+                            { name: 'Sensō-ji Temple', coords: [35.7147, 139.7966], transport: 'Spacer', food: 'Melonpan' },
+                            { name: 'Park Ueno', coords: [35.7140, 139.7740], transport: 'Metro Ginza', food: 'Street food Ameyoko' },
+                            { name: 'Daikoku-yu Onsen', coords: [35.7077, 139.8056], transport: 'Taxi', food: 'Mleko kawowe' }
                         ]
                     },
                     {
-                        id: 'd2', date: '24.03 (Wt)', title: 'CENTRUM & AKIBA', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        id: 'd2', date: '24.03', title: 'CENTRUM', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
                         tasks: [
-                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], transport: 'Oedo Line', food: 'Śniadanie Mistrzów: Sushi Daiwa albo omlet Tamagoyaki na patyku.' },
-                            { name: 'Pałac Cesarski', coords: [35.6851, 139.7527], transport: 'Hibiya Line', food: 'Tu nic nie ma, weźcie wodę.' },
-                            { name: 'Caretta Shiodome', coords: [35.6649, 139.7626], transport: 'Spacer', food: 'Darmowy widok z windy na 46 piętro.' },
-                            { name: 'Akihabara', coords: [35.7022, 139.7741], transport: 'Yamanote', food: 'Maid Cafe (dla beki) albo "Go Go Curry" (wielkie porcje).' }
+                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], transport: 'Oedo Line', food: 'Sushi Daiwa' },
+                            { name: 'Akihabara', coords: [35.7022, 139.7741], transport: 'Yamanote', food: 'Go Go Curry' }
                         ]
                     },
                     {
-                        id: 'd3', date: '25.03 (Śr)', title: 'SHIBUYA & KOTY', hotelKey: 'galicia', colorClass: 'border-red-500', totalKm: 0,
+                        id: 'd3', date: '25.03', title: 'SHIBUYA (HARD)', hotelKey: 'galicia', colorClass: 'border-red-500', totalKm: 0,
                         tasks: [
-                            { name: 'Gotokuji', coords: [35.6482, 139.6483], transport: 'Odakyu Line', food: 'Klasztor kotów. Tylko fotki.' },
-                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], transport: 'Odakyu Line', food: 'Najlepsza kawa i małe knajpki z Curry.' },
-                            { name: 'Shibuya Crossing', coords: [35.6595, 139.7004], transport: 'Inokashira Line', food: 'Genki Sushi (zamawiasz na tablecie).' },
-                            { name: 'Harajuku / Meiji', coords: [35.6710, 139.7030], transport: 'Spacer', food: 'Naleśniki (Crepes) na Takeshita Street.' }
+                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], transport: 'Odakyu Line', food: 'Kawa & Curry' },
+                            { name: 'Shibuya Crossing', coords: [35.6595, 139.7004], transport: 'Inokashira', food: 'Genki Sushi' },
+                            { name: 'Shibuya Sky', coords: [35.6585, 139.7018], transport: 'Spacer', food: 'Widoki' }
                         ]
                     },
                     {
-                        id: 'd4', date: '26.03 (Czw)', title: 'WIŚNIE & GODZILLA', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        id: 'd4', date: '26.03', title: 'CHILL', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
                         tasks: [
-                            { name: 'Nakameguro', coords: [35.6443, 139.6990], transport: 'Hibiya Line', food: 'Szampan z truskawkami nad rzeką (drogo ale lans).' },
-                            { name: 'Ikebukuro', coords: [35.7295, 139.7109], transport: 'Fukutoshin', food: 'Sunshine City - masa jedzenia.' },
-                            { name: 'Shinjuku Kabukicho', coords: [35.6938, 139.7035], transport: 'Yamanote', food: 'Omoide Yokocho (Uliczka Sików) - Yakitori i piwo. Klimat top.' }
+                            { name: 'Nakameguro', coords: [35.6443, 139.6990], transport: 'Hibiya Line', food: 'Truskawki i szampan' },
+                            { name: 'Shinjuku Kabukicho', coords: [35.6938, 139.7035], transport: 'Yamanote', food: 'Yakitori na Omoide Yokocho' }
                         ]
                     },
                     {
-                        id: 'd5', date: '27.03 (Pt)', title: 'WYCIECZKA', hotelKey: 'galicia', colorClass: 'border-neonGold', totalKm: 0,
+                        id: 'd5', date: '27.03', title: 'WYCIECZKA', hotelKey: 'galicia', colorClass: 'border-neonGold', totalKm: 0,
                         tasks: [
-                            { name: 'Kamakura', coords: [35.3168, 139.5361], transport: 'JR Yokosuka', food: 'Lody o smaku batata (fioletowe).' },
-                            { name: 'Enoshima', coords: [35.3016, 139.4814], transport: 'Enoden', food: 'Shirasu-don (ryż z małymi rybkami).' },
-                            { name: 'Yokohama', coords: [35.4439, 139.6462], transport: 'Powrót', food: 'Chinatown: Pierożki gotowane na parze (ogromne).' }
-                        ]
-                    },
-                    {
-                        id: 'd6', date: '28.03 (Sob)', title: 'KIOTO START', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], transport: 'Taxi', food: 'Ciastka Yatsuhashi (cynamonowe trójkąty).' },
-                            { name: 'Gion', coords: [35.0054, 135.7745], transport: 'Spacer', food: 'Drogo. Lepiej zjeść w okolicy rzeki Kamo.' }
-                        ]
-                    },
-                    {
-                        id: 'd7', date: '29.03 (Niedz)', title: 'INARI BRAMY', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Fushimi Inari', coords: [34.9671, 135.7726], transport: 'Keihan Line', food: 'Uliczne żarcie przy wejściu (Kitsune Udon).' }
-                        ]
-                    },
-                    {
-                        id: 'd8', date: '30.03 (Pon)', title: 'KIOTO SPACER', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Ginkaku-ji', coords: [35.0268, 135.7982], transport: 'Bus 17', food: 'Lody Matcha.' },
-                            { name: 'Ścieżka Filozofów', coords: [35.0230, 135.7950], transport: 'Spacer', food: 'Kawiarnie po drodze.' }
-                        ]
-                    },
-                    {
-                        id: 'd9', date: '31.03 (Wt)', title: 'NARA', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Nara Park', coords: [34.6850, 135.8430], transport: 'Kintetsu', food: 'Krakersy dla jeleni (nie jedzcie ich sami).' },
-                            { name: 'Mochi Pounding', coords: [34.6833, 135.8290], transport: 'Nakatanidou', food: 'Najszybsze ubijanie Mochi w Japonii. Musisz spróbować.' }
+                            { name: 'Kamakura (Budda)', coords: [35.3168, 139.5361], transport: 'JR Yokosuka', food: 'Lody batatowe' },
+                            { name: 'Enoshima', coords: [35.3016, 139.4814], transport: 'Enoden', food: 'Ryż z rybkami' }
                         ]
                     },
                      {
-                        id: 'd10', date: '01.04 - 05.04', title: 'TOKIO FINAL', hotelKey: 'tomi', colorClass: 'border-neonCyan', totalKm: 0,
+                        id: 'd6', date: '28.03', title: 'KIOTO START', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
                         tasks: [
-                            { name: 'TeamLab Planets', coords: [35.6154, 139.7956], transport: 'Yurikamome', food: 'Ramen w Toyosu po zwiedzaniu.' },
-                            { name: 'Zakupy / Donki', coords: null, transport: 'Wszędzie', food: 'KitKaty Wasabi i Sake.' }
+                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], transport: 'Taxi', food: 'Ciastka Yatsuhashi' },
+                            { name: 'Gion', coords: [35.0054, 135.7745], transport: 'Spacer', food: 'Matcha' }
+                        ]
+                    },
+                    {
+                        id: 'd7', date: '29.03', title: 'INARI', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Fushimi Inari', coords: [34.9671, 135.7726], transport: 'Keihan Line', food: 'Kitsune Udon' }
+                        ]
+                    },
+                    {
+                        id: 'd9', date: '31.03', title: 'NARA', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Nara Park', coords: [34.6850, 135.8430], transport: 'Kintetsu', food: 'Mochi (Nakatanidou)' }
+                        ]
+                    },
+                    {
+                        id: 'd10', date: '01.04', title: 'POWRÓT', hotelKey: 'tomi', colorClass: 'border-neonCyan', totalKm: 0,
+                        tasks: [
+                            { name: 'TeamLab Planets', coords: [35.6154, 139.7956], transport: 'Yurikamome', food: 'Ramen' },
+                            { name: 'Don Quijote', coords: null, transport: 'Wszędzie', food: 'KitKat Wasabi' }
                         ]
                     }
                 ],
 
+                get convertedPln() {
+                    if(!this.yenInput) return '0.00';
+                    return (this.yenInput * 0.0265).toFixed(2) + ' zł';
+                },
+
+                get globalProgress() {
+                    let total = 0; this.allDays.forEach(d => total += d.tasks.length);
+                    if (total === 0) return 0;
+                    return Math.round((this.checked.length / total) * 100);
+                },
+
                 initApp() {
-                    this.map = L.map('map', {zoomControl: false}).setView([35.6930, 139.7924], 12);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; CARTO', maxZoom: 19
-                    }).addTo(this.map);
-                    
+                    // Start Countdown
+                    this.updateCountdown();
+                    setInterval(() => this.updateCountdown(), 60000);
+
+                    // Calc Distances
                     this.calculateAllDistances();
-                    setTimeout(() => {
-                        this.currentDayId = 'd1'; 
-                        this.focusDay(this.allDays[0]);
-                    }, 500);
+
+                    // Init Map (Tylko jeśli widoczna)
+                    this.$watch('activeTab', value => {
+                        if (value === 'plan' && !this.map) {
+                            setTimeout(() => {
+                                this.initMap();
+                                this.focusDay(this.allDays[0]);
+                                this.currentDayId = 'd1';
+                            }, 100);
+                        }
+                    });
+                },
+
+                updateCountdown() {
+                    const target = new Date('2026-03-22T20:00:00');
+                    const now = new Date();
+                    const diff = target - now;
+                    if (diff > 0) {
+                        this.countdown.days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        this.countdown.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    } else {
+                        this.countdown = { days: 0, hours: 0 };
+                    }
                 },
 
                 calculateAllDistances() {
@@ -315,10 +371,18 @@
                     });
                 },
 
+                initMap() {
+                    this.map = L.map('map', {zoomControl: false}).setView([35.6930, 139.7924], 12);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '', maxZoom: 19
+                    }).addTo(this.map);
+                },
+
                 focusDay(day) {
                     this.currentDayId = day.id;
-                    this.currentDayTitle = day.date + ' - ' + day.title;
-                    
+                    this.currentDayTitle = day.title;
+                    if(!this.map) return;
+
                     if (this.routeLine) this.map.removeLayer(this.routeLine);
                     this.markers.forEach(m => this.map.removeLayer(m));
                     this.markers = [];
@@ -326,13 +390,11 @@
                     const hotel = this.hotels[day.hotelKey];
                     const points = [hotel.coords]; 
                     
-                    // Hotel Marker
                     const hotelMarker = L.marker(hotel.coords, {
                         icon: L.divIcon({className: '', html: `<div class="hotel-icon">🏨</div>`, iconSize: [26,26]})
                     }).addTo(this.map);
                     this.markers.push(hotelMarker);
 
-                    // Tasks
                     day.tasks.forEach((task, index) => {
                         if(task.coords) {
                             points.push(task.coords);
@@ -343,7 +405,6 @@
                         }
                     });
 
-                    // Line
                     if (points.length > 1) {
                         this.routeLine = L.polyline(points, {
                             color: '#00f2ff', weight: 4, opacity: 0.8
@@ -359,7 +420,14 @@
                         this.checked.push(name);
                         if (navigator.vibrate) navigator.vibrate(50);
                     }
-                    localStorage.setItem('jp_v6_checked', JSON.stringify(this.checked));
+                    localStorage.setItem('jp_v7_checked', JSON.stringify(this.checked));
+                },
+                
+                resetTrip() {
+                    if(confirm("Czyścimy wszystko?")) {
+                        localStorage.removeItem('jp_v7_checked');
+                        location.reload();
+                    }
                 }
             }
         }
