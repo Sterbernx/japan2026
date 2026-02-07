@@ -1,505 +1,426 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaktywny Planer Podróży do Japonii</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🇯🇵 JAPONIA 2026: ALEKS & EKIPA V5</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Serene Sakura -->
-    <!-- Application Structure Plan: A single-page application designed for intuitive exploration. The structure is thematic rather than linear. It starts with a 'Dashboard' for a quick overview. The 'Planner Strategiczny' section provides actionable advice on budget and transport. A new 'Mapa Atrakcji' section provides a visual overview of key locations. The core is the 'Interaktywny Plan Podróży', a filterable timeline allowing users to view the itinerary by region or interest. This structure empowers the user to understand the trip's components and explore details based on their priorities. -->
-    <!-- Visualization & Content Choices: 
-        - Budget Breakdown (Goal: Inform): An interactive doughnut chart (Chart.js) visualizes cost categories for 3 people. Interaction: Hovering over segments reveals details. Justification: More engaging and easier to grasp than a simple table.
-        - Interactive Map (Goal: Organize/Explore): A custom map drawn on an HTML Canvas with JS. This removes external dependencies and ensures the map always loads. Pins are accurately placed to represent all key locations in the itinerary. Interaction: Hovering near pins triggers a tooltip with attraction info and relevant travel days, handled via JS hit detection. Justification: Provides a clear, reliable, and accurate geographic context to the itinerary.
-        - JR Pass Analysis (Goal: Compare): A clear HTML/Tailwind table compares JR Pass vs. individual ticket costs for 3 people. Interaction: None needed, clarity is key. Justification: Direct comparison is the most effective way to convey the cost-saving conclusion.
-        - Itinerary (Goal: Organize/Explore): A dynamic, card-based grid (HTML/Tailwind/JS). Interaction: Users can filter days by region or interest tags. Justification: This non-linear approach allows users to focus on parts of the trip most relevant to them.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        neonPink: '#ff0055',
+                        neonCyan: '#00f2ff',
+                        neonYellow: '#ffee00',
+                        neonPurple: '#bc13fe',
+                        darkBg: '#050505',
+                        cardBg: '#121212'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FDFBF8;
-            color: #3f3f46;
-        }
-        .active-nav {
-            color: #DC2626;
-            border-bottom: 2px solid #DC2626;
-        }
-        .inactive-nav {
-            color: #71717a;
-            border-bottom: 2px solid transparent;
-        }
-        .btn-filter {
-            transition: all 0.3s ease;
-        }
-        .active-filter {
-            background-color: #DC2626;
-            color: white;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .inactive-filter {
-            background-color: #FEE2E2;
-            color: #991B1B;
-        }
-        .day-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            will-change: transform;
-        }
-        .day-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: auto;
-            max-height: 400px;
-        }
-        .tag {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        .tag-culture { background-color: #DBEAFE; color: #1E40AF; }
-        .tag-nature { background-color: #D1FAE5; color: #065F46; }
-        .tag-pop { background-color: #F3E8FF; color: #5B21B6; }
-        .tag-food { background-color: #FEF3C7; color: #92400E; }
-        .tag-travel { background-color: #E5E7EB; color: #374151; }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #e0e0e0; }
+        h1, h2, .font-teko { font-family: 'Teko', sans-serif; text-transform: uppercase; }
         
-        .map-container {
-            position: relative;
-            width: 100%;
-            max-width: 800px;
-            margin: auto;
-            aspect-ratio: 16 / 10;
-            border-radius: 1rem;
-            border: 2px solid #fee2e2;
-            background-color: #eff6ff;
+        #map { height: 45vh; width: 100%; border-bottom: 2px solid #bc13fe; z-index: 1; }
+        
+        /* Ciemna mapa */
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(120%); }
+        
+        /* Ikony Punktów */
+        .number-icon {
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #00f2ff;
+            color: #00f2ff;
+            border-radius: 50%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 28px;
+            box-shadow: 0 0 10px #00f2ff;
         }
-        #japan-map-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: pointer;
-        }
-        #map-tooltip {
-            position: absolute;
-            display: none;
-            background-color: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 8px 12px;
+        .hotel-icon {
+            background: #ff0055;
+            border: 2px solid #fff;
+            color: #fff;
             border-radius: 8px;
-            font-size: 0.875rem;
-            pointer-events: none;
-            z-index: 10;
-            white-space: normal;
-            max-width: 250px;
-            line-height: 1.4;
-            transition: opacity 0.2s;
+            text-align: center;
+            font-size: 18px;
+            line-height: 28px;
+            box-shadow: 0 0 15px #ff0055;
+            z-index: 1000 !important;
+        }
+
+        /* Etykieta Dystansu na Linii */
+        .dist-label {
+            background-color: #000;
+            border: 1px solid #bc13fe;
+            color: #bc13fe;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            text-align: center;
+            box-shadow: 0 0 5px #bc13fe;
+            transform: translate(-50%, -50%); /* Centrowanie */
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .task-checkbox:checked + div {
+            background-color: #00f2ff;
+            border-color: #00f2ff;
+            color: #000;
         }
     </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body class="antialiased">
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-red-700 mb-2">Japonia w Pełni Rozkwitu</h1>
-            <p class="text-lg text-gray-600">Interaktywny Planer Podróży: 21 marca – 5 kwietnia 2025</p>
+
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <div x-data="travelApp()" x-init="initApp()" class="flex-1 flex flex-col h-full">
+
+        <header class="bg-cardBg p-3 border-b border-gray-800 flex-none z-20 shadow-xl relative">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-teko text-neonPurple tracking-widest leading-none">JAPONIA TRIP</h1>
+                    <p class="text-[11px] text-gray-400">Status: <span class="text-neonCyan font-bold">WERSJA Z DYSTANSEM 📏</span></p>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-gray-500 font-teko">POSTĘP</div>
+                    <div class="text-xl text-neonPink font-bold font-teko" x-text="progress + '%'"></div>
+                </div>
+            </div>
+            <div class="w-full bg-gray-900 h-1 mt-2 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-neonPurple to-neonCyan h-full transition-all duration-500" :style="`width: ${progress}%`"></div>
+            </div>
         </header>
 
-        <nav class="flex flex-wrap justify-center border-b border-gray-200 mb-12">
-            <button data-section="dashboard" class="nav-btn active-nav text-lg font-semibold py-4 px-6">Pulpit</button>
-            <button data-section="planner" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Planner Strategiczny</button>
-            <button data-section="map" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Mapa Podróży</button>
-            <button data-section="itinerary" class="nav-btn inactive-nav text-lg font-semibold py-4 px-6">Interaktywny Plan</button>
-        </nav>
-
-        <main>
-            <section id="dashboard" class="space-y-12">
-                <div class="text-center bg-red-50 border border-red-200 rounded-2xl p-8">
-                    <h2 class="text-3xl font-bold text-red-800 mb-4">Witaj w Twoim Centrum Planowania Podróży!</h2>
-                    <p class="text-gray-700 max-w-3xl mx-auto">
-                        Ta aplikacja przekształca Twój plan podróży w interaktywne doświadczenie. Użyj nawigacji, aby przełączać się między pulpitem, analizą strategiczną, mapą a szczegółowym, filtrowalnym harmonogramem. Odkryj kluczowe dane, zoptymalizuj logistykę i zwizualizuj każdy dzień swojej przygody w Kraju Kwitnącej Wiśni.
-                    </p>
-                </div>
-
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-xl mb-3 text-red-700">✈️ Koszt Lotów</h3>
-                        <p class="text-3xl font-semibold">18 900 PLN</p>
-                        <p class="text-gray-500">dla 3 osób (6300 PLN/os.)</p>
-                    </div>
-                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-xl mb-3 text-red-700">💰 Budżet na Miejscu</h3>
-                        <p class="text-3xl font-semibold">~29 100 PLN</p>
-                        <p class="text-gray-500">dla 3 osób, bez lotów</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-xl mb-3 text-red-700">📊 Całkowity Budżet</h3>
-                        <p class="text-3xl font-semibold">~48 000 PLN</p>
-                        <p class="text-gray-500">dla 3 osób, z lotami</p>
-                    </div>
-                </div>
-                 <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 md:col-span-2 lg:col-span-3">
-                    <h3 class="font-bold text-2xl mb-4 text-center text-red-700">Podział Szacunkowych Kosztów na Miejscu (dla 3 osób)</h3>
-                    <div class="chart-container">
-                        <canvas id="budgetChart"></canvas>
-                    </div>
-                     <p class="text-center text-xs text-gray-500 mt-4">Przeliczono po kursie 1 USD = 4,00 PLN. Koszty w JPY w sekcji "Planner" pozostają bez zmian dla precyzji.</p>
-                </div>
-            </section>
-
-            <section id="planner" class="hidden space-y-12">
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-3xl font-bold text-red-800 mb-6 text-center">Planner Strategiczny: Optymalizacja Podróży</h2>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-2xl font-semibold mb-4 text-red-700">🚄 Transport: JR Pass vs Bilety Indywidualne</h3>
-                            <p class="mb-4 text-gray-700">Po podwyżce cen w październiku 2023, Japan Rail Pass rzadko jest opłacalny. Analiza planu dla 3 osób jednoznacznie wskazuje na korzyść zakupu biletów indywidualnych.</p>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr>
-                                            <th class="border-b-2 border-red-200 p-3 font-semibold">Opcja (dla 3 osób)</th>
-                                            <th class="border-b-2 border-red-200 p-3 font-semibold text-right">Szacowany Koszt</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr class="bg-red-50">
-                                            <td class="p-3">14-dniowy Japan Rail Pass</td>
-                                            <td class="p-3 text-right font-mono">240,000 JPY</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="p-3">Suma biletów indywidualnych (Wasza trasa)</td>
-                                            <td class="p-3 text-right font-mono">~99,720 JPY</td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr class="font-bold bg-green-50">
-                                            <td class="p-3">Oszczędność</td>
-                                            <td class="p-3 text-right font-mono text-green-700">~140,280 JPY</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <p class="mt-4 text-sm text-gray-600"><strong>Rekomendacja:</strong> Zamiast JR Pass, zainwestujcie w regionalne karnety jak <strong class="text-red-600">Hakone Free Pass</strong> i <strong class="text-red-600">Enoshima Kamakura Free Pass</strong>, które oferują znaczne oszczędności i wygodę w swoich regionach.</p>
-                        </div>
-                        <div>
-                            <h3 class="text-2xl font-semibold mb-4 text-red-700">🏨 Zakwaterowanie: Strategia Hybrydowa</h3>
-                            <p class="mb-4 text-gray-700">Wasz plan obejmuje hotele o różnym standardzie. Aby połączyć unikalne doświadczenie z komfortem, rozważcie strategię hybrydową:</p>
-                            <ul class="space-y-4">
-                                <li class="flex items-start">
-                                    <span class="text-red-500 mr-3 mt-1">●</span>
-                                    <div>
-                                        <h4 class="font-semibold">Doświadczenie Kapsuły (2-3 noce)</h4>
-                                        <p class="text-gray-600">Rozpocznijcie od noclegu w nowoczesnym hotelu kapsułowym, jak The Global Hotel Tokyo, aby poczuć unikalny klimat Japonii i zaoszczędzić na budżecie.</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-red-500 mr-3 mt-1">●</span>
-                                    <div>
-                                        <h4 class="font-semibold">Komfortowy Hotel (reszta pobytu)</h4>
-                                        <p class="text-gray-600">Na pozostałą część podróży wybierzcie hotel o wyższym standardzie, np. Hotel Metropolitan Tokyo Ikebukuro, aby zapewnić sobie komfort i regenerację sił.</p>
-                                    </div>
-                                </li>
-                            </ul>
-                             <p class="mt-4 text-sm text-gray-600"><strong>Korzyść:</strong> Taka strategia pozwala zrównoważyć budżet, nie rezygnując ani z autentycznych doświadczeń, ani z wygody niezbędnej podczas intensywnej podróży.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+        <div class="flex-none relative bg-black z-10">
+            <div id="map"></div>
             
-            <section id="map" class="hidden space-y-12">
-                 <div class="text-center mb-10">
-                    <h2 class="text-3xl font-bold text-red-800 mb-4">Interaktywna Mapa Podróży</h2>
-                    <p class="text-gray-700 max-w-3xl mx-auto">
-                        Najedź kursorem na punkty na mapie, aby zobaczyć kluczowe miejsca z Waszego planu podróży. To wizualny przewodnik po przygodzie w regionach Kanto i Kansai.
-                    </p>
-                </div>
-                <div class="map-container" id="map-container">
-                    <canvas id="japan-map-canvas"></canvas>
-                    <div id="map-tooltip"></div>
-                </div>
-            </section>
+            <div class="absolute bottom-2 left-2 z-[999] bg-black/80 backdrop-blur p-2 rounded border border-gray-700 text-[10px] text-gray-300">
+                <div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 bg-neonPink rounded-sm"></span> Hotel</div>
+                <div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 bg-neonCyan rounded-full"></span> Atrakcja</div>
+                <div class="flex items-center gap-2"><span class="text-neonPurple font-bold">1.2 km</span> Odległość</div>
+            </div>
+        </div>
 
-            <section id="itinerary" class="hidden">
-                 <div class="text-center mb-10">
-                    <h2 class="text-3xl font-bold text-red-800 mb-4">Interaktywny Plan Podróży</h2>
-                    <p class="text-gray-700 max-w-3xl mx-auto">
-                        Filtrujcie dni podróży według regionu lub Waszych zainteresowań, aby skupić się na tym, co Was najbardziej ciekawi. Każda karta to jeden dzień pełen przygód.
-                    </p>
+        <main class="flex-1 overflow-y-auto bg-darkBg relative z-20 no-scrollbar pb-10">
+            
+            <template x-for="(day, index) in allDays" :key="day.id">
+                <div class="mb-1 border-b border-gray-900">
+                    
+                    <div class="sticky top-0 bg-cardBg/95 backdrop-blur-md p-4 flex justify-between items-center shadow-lg border-l-4 cursor-pointer transition-colors hover:bg-white/5"
+                         :class="day.colorClass"
+                         @click="focusDay(day)">
+                        <div>
+                            <div class="font-teko text-2xl text-white leading-none tracking-wide">
+                                <span x-text="day.date"></span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="text-xs text-gray-400 uppercase tracking-widest font-bold" x-text="day.title"></div>
+                                <div x-show="day.totalKm > 0" class="text-[10px] bg-gray-800 text-neonPurple px-2 py-0.5 rounded border border-neonPurple/30">
+                                    Trasa: ~<span x-text="day.totalKm"></span> km
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                             <span x-show="day.alert" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-bold animate-pulse" x-text="day.alert"></span>
+                             <div class="text-[10px] text-neonCyan border border-neonCyan/30 px-2 rounded hover:bg-neonCyan hover:text-black transition">Pokaż trasę 🗺️</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900/80 p-3 flex items-center gap-3 border-b border-gray-800">
+                        <div class="text-xl">🏨</div>
+                        <div class="text-xs text-gray-400">
+                            Start: <span class="text-neonPink font-bold" x-text="hotels[day.hotelKey].name"></span>
+                        </div>
+                    </div>
+
+                    <div class="p-2 space-y-3">
+                        <template x-for="(task, i) in day.tasks" :key="task.name">
+                            <div class="bg-cardBg rounded-lg p-3 border border-gray-800 relative group">
+                                
+                                <div class="flex gap-3">
+                                    <div class="flex-none w-8 h-8 rounded-full bg-gray-800 border border-gray-600 text-gray-300 font-bold flex items-center justify-center font-teko text-lg" 
+                                         :class="{'border-neonCyan text-neonCyan': !isChecked(task.name), 'bg-neonCyan text-black border-neonCyan': isChecked(task.name)}"
+                                         x-text="i + 1">
+                                    </div>
+
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-bold text-white leading-tight flex justify-between">
+                                            <span x-text="task.name"></span>
+                                            <input type="checkbox" class="w-5 h-5 accent-neonCyan rounded cursor-pointer ml-2" 
+                                                :checked="isChecked(task.name)" @change="toggleCheck(task.name)">
+                                        </div>
+
+                                        <div class="mt-2 space-y-1">
+                                            <div class="text-[11px] text-neonCyan bg-cyan-900/20 px-2 py-1 rounded inline-block border border-cyan-900/50">
+                                                🚇 <span x-text="task.transport"></span>
+                                            </div>
+                                            <div x-show="task.comment" class="text-[11px] text-gray-400 italic border-l-2 border-gray-600 pl-2 mt-1">
+                                                💡 <span x-text="task.comment"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex gap-2">
+                                     <a :href="task.coords ? `https://www.google.com/maps/dir/?api=1&destination=${task.coords[0]},${task.coords[1]}&travelmode=transit` : '#'" 
+                                        target="_blank"
+                                        class="flex-1 bg-gray-800 hover:bg-gray-700 text-center py-2 text-[10px] font-bold text-white border border-gray-600 rounded transition uppercase tracking-wider"
+                                        :class="{'opacity-50 pointer-events-none': !task.coords}">
+                                        📍 Nawiguj (Google Maps)
+                                     </a>
+                                </div>
+
+                            </div>
+                        </template>
+                    </div>
                 </div>
-                <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-10">
-                    <button class="btn-filter active-filter font-semibold py-2 px-5 rounded-full" data-filter="all">Wszystko</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="kanto">📍 Region Kanto</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="kansai">📍 Region Kansai</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="culture">🏛️ Kultura i Historia</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="nature">🌳 Natura i Widoki</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="pop">🎮 Popkultura</button>
-                    <button class="btn-filter inactive-filter font-semibold py-2 px-5 rounded-full" data-filter="food">🍜 Kulinaria</button>
-                </div>
-                <div id="itinerary-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
-            </section>
+            </template>
+            
+            <div class="p-8 text-center pb-20">
+                <button @click="resetTrip()" class="mt-4 text-[10px] text-red-900 underline">Resetuj wszystko</button>
+            </div>
         </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sections = {
-                dashboard: document.getElementById('dashboard'),
-                planner: document.getElementById('planner'),
-                map: document.getElementById('map'),
-                itinerary: document.getElementById('itinerary')
-            };
-            const navButtons = document.querySelectorAll('.nav-btn');
+        function travelApp() {
+            return {
+                map: null,
+                markers: [],
+                polylines: [],
+                distLabels: [],
+                checked: JSON.parse(localStorage.getItem('jp_v5_checked')) || [],
+                
+                hotels: {
+                    'galicia': { name: 'Galicia Ryogoku', coords: [35.6930, 139.7924] },
+                    'lion': { name: 'Le Lion d\'or (Kioto)', coords: [35.0080, 135.7700] },
+                    'tomi': { name: 'TOMI Hotel', coords: [35.6650, 139.8700] }
+                },
 
-            navButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const sectionId = button.dataset.section;
+                allDays: [
+                    { 
+                        id: 'd0', date: '22.03 (Niedz)', title: 'PRZYLOT', hotelKey: 'galicia', colorClass: 'border-gray-500', totalKm: 0,
+                        tasks: [
+                            { name: 'Transfer NRT -> Hotel', coords: [35.6930, 139.7924], transport: 'Keisei Skyliner', comment: 'Odpocznijcie po locie.' },
+                            { name: 'Konbini (Kolacja)', coords: null, transport: 'Pieszo', comment: 'Onigiri time!' }
+                        ]
+                    },
+                    { 
+                        id: 'd1', date: '23.03 (Pon)', title: 'ASAKUSA & UENO', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        tasks: [
+                            { name: 'Sensō-ji', coords: [35.7147, 139.7966], transport: 'Spacer 25 min / Bus', comment: 'Wróżba Omikuji.' },
+                            { name: 'Park Ueno', coords: [35.7140, 139.7740], transport: 'Metro Ginza Line', comment: 'Możliwe wiśnie!' },
+                            { name: 'Yanaka Ginza', coords: [35.7275, 139.7645], transport: 'Spacer', comment: 'Stare Tokio.' },
+                            { name: 'Daikoku-yu Onsen', coords: [35.7077, 139.8056], transport: 'Taxi/Powrót', comment: 'Kąpiel w gorącej wodzie.' }
+                        ]
+                    },
+                    {
+                        id: 'd2', date: '24.03 (Wt)', title: 'CENTRUM', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        tasks: [
+                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], transport: 'Oedo Line', comment: 'Sushi na śniadanie.' },
+                            { name: 'Pałac Cesarski', coords: [35.6851, 139.7527], transport: 'Hibiya Line', comment: 'Spacer po ogrodach.' },
+                            { name: 'Caretta Shiodome', coords: [35.6649, 139.7626], transport: 'Spacer', comment: 'Widok z góry za darmo.' },
+                            { name: 'Akihabara', coords: [35.7022, 139.7741], transport: 'JR Yamanote', comment: 'Gry i elektronika.' }
+                        ]
+                    },
+                    {
+                        id: 'd3', date: '25.03 (Śr)', title: 'WEST TOKYO', hotelKey: 'galicia', colorClass: 'border-red-500', alert: 'HARDCORE', totalKm: 0,
+                        tasks: [
+                            { name: 'Gotokuji (Koty)', coords: [35.6482, 139.6483], transport: 'Odakyu Line (Długo!)', comment: 'Świątynia kotów.' },
+                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], transport: 'Odakyu Line', comment: 'Hipster district.' },
+                            { name: 'Shibuya Crossing', coords: [35.6595, 139.7004], transport: 'Inokashira Line', comment: 'Tłumy!' },
+                            { name: 'Meiji Shrine', coords: [35.6710, 139.7030], transport: 'Spacer/JR', comment: 'Wielki park.' }
+                        ]
+                    },
+                    {
+                        id: 'd4', date: '26.03 (Czw)', title: 'CHILL & SHINJUKU', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
+                        tasks: [
+                            { name: 'Nakameguro', coords: [35.6443, 139.6990], transport: 'Hibiya Line', comment: 'Rzeka wiśni.' },
+                            { name: 'Ikebukuro', coords: [35.7295, 139.7109], transport: 'Fukutoshin Line', comment: 'Anime & Pokemon.' },
+                            { name: 'Shinjuku (Kabukicho)', coords: [35.6938, 139.7035], transport: 'JR Yamanote', comment: 'Neonowe szaleństwo.' }
+                        ]
+                    },
+                    {
+                        id: 'd5', date: '27.03 (Pt)', title: 'TRIP ZA MIASTO', hotelKey: 'galicia', colorClass: 'border-orange-500', alert: 'MARATON', totalKm: 0,
+                        tasks: [
+                            { name: 'Kamakura', coords: [35.3168, 139.5361], transport: 'JR Yokosuka', comment: 'Wielki Budda.' },
+                            { name: 'Enoshima', coords: [35.3016, 139.4814], transport: 'Enoden', comment: 'Wyspa i plaża.' },
+                            { name: 'Yokohama', coords: [35.4439, 139.6462], transport: 'Powrót', comment: 'Chinatown na kolację.' }
+                        ]
+                    },
+                    {
+                        id: 'd6', date: '28.03 (Sob)', title: 'KIOTO START', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], transport: 'Taxi z hotelu', comment: 'Świątynia na wzgórzu.' },
+                            { name: 'Sannenzaka', coords: [34.9972, 135.7824], transport: 'Spacer w dół', comment: 'Stare schody.' },
+                            { name: 'Gion', coords: [35.0054, 135.7745], transport: 'Spacer', comment: 'Dzielnica Gejsz.' }
+                        ]
+                    },
+                    {
+                        id: 'd7', date: '29.03 (Niedz)', title: 'FUSHIMI INARI', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Fushimi Inari', coords: [34.9671, 135.7726], transport: 'Keihan Line', comment: 'Tysiące bram. RANO!' }
+                        ]
+                    },
+                    {
+                        id: 'd8', date: '30.03 (Pon)', title: 'SREBRNY PAWILON', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Ginkaku-ji', coords: [35.0268, 135.7982], transport: 'Bus 17', comment: 'Ogrody Zen.' },
+                            { name: 'Ścieżka Filozofów', coords: [35.0230, 135.7950], transport: 'Spacer', comment: 'Klimatyczny kanał.' },
+                            { name: 'Sanjūsangen-dō', coords: [34.9878, 135.7717], transport: 'Bus', comment: '1001 posągów.' }
+                        ]
+                    },
+                    {
+                        id: 'd9', date: '31.03 (Wt)', title: 'NARA', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
+                        tasks: [
+                            { name: 'Nara Park', coords: [34.6850, 135.8430], transport: 'Kintetsu Line', comment: 'Jelonki! 🦌' },
+                            { name: 'Tōdai-ji', coords: [34.6889, 135.8398], transport: 'Spacer', comment: 'Wielki Budda.' }
+                        ]
+                    },
+                    {
+                        id: 'd10', date: '01.04 - 05.04', title: 'TOKIO FREE', hotelKey: 'tomi', colorClass: 'border-neonCyan', totalKm: 0,
+                        tasks: [
+                            { name: 'TeamLab', coords: [35.6154, 139.7956], transport: 'Yurikamome', comment: 'Muzeum cyfrowe.' },
+                            { name: 'Odaiba', coords: [35.6243, 139.7755], transport: 'Monorail', comment: 'Gundam.' }
+                        ]
+                    },
+                     {
+                        id: 'd11', date: '06.04 (Pon)', title: 'WYLOT', hotelKey: 'tomi', colorClass: 'border-gray-500', totalKm: 0,
+                        tasks: [
+                            { name: 'Narita Airport', coords: [35.7719, 140.3906], transport: 'Skyliner', comment: 'Papa Japonio! ✈️' }
+                        ]
+                    }
+                ],
 
-                    navButtons.forEach(btn => {
-                        btn.classList.remove('active-nav');
-                        btn.classList.add('inactive-nav');
-                    });
-                    button.classList.add('active-nav');
-                    button.classList.remove('inactive-nav');
+                get progress() {
+                    let total = 0; this.allDays.forEach(d => total += d.tasks.length);
+                    if (total === 0) return 0;
+                    return Math.round((this.checked.length / total) * 100);
+                },
 
-                    Object.values(sections).forEach(section => {
-                        section.classList.add('hidden');
-                    });
-                    sections[sectionId].classList.remove('hidden');
+                initApp() {
+                    this.map = L.map('map').setView([35.6930, 139.7924], 12);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '© OpenStreetMap', maxZoom: 19
+                    }).addTo(this.map);
                     
-                    if (sectionId === 'map') {
-                        drawMap();
-                    }
-                });
-            });
+                    // Pre-calculate distances for headers
+                    this.calculateAllDistances();
 
-            const budgetData = {
-                labels: ['Zakwaterowanie', 'Wyżywienie', 'Transport Międzymiastowy', 'Transport Lokalny', 'Atrakcje i Aktywności'],
-                datasets: [{
-                    label: 'Szacowany Budżet',
-                    data: [16380, 7680, 2952, 912, 1332],
-                    backgroundColor: [
-                        '#EF4444',
-                        '#F97316',
-                        '#FBBF24',
-                        '#84CC16',
-                        '#3B82F6'
-                    ],
-                    borderColor: '#FDFBF8',
-                    borderWidth: 4,
-                    hoverOffset: 4
-                }]
-            };
+                    // Load first day
+                    setTimeout(() => this.focusDay(this.allDays[1]), 500);
+                },
 
-            const budgetChartCtx = document.getElementById('budgetChart').getContext('2d');
-            new Chart(budgetChartCtx, {
-                type: 'doughnut',
-                data: budgetData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    size: 14,
-                                    family: 'Inter'
-                                },
-                                color: '#3f3f46',
-                                padding: 20
+                calculateAllDistances() {
+                    this.allDays.forEach(day => {
+                        const hotel = this.hotels[day.hotelKey];
+                        let totalDist = 0;
+                        let prevCoords = L.latLng(hotel.coords);
+                        let hasCoords = false;
+
+                        day.tasks.forEach(task => {
+                            if(task.coords) {
+                                hasCoords = true;
+                                const currCoords = L.latLng(task.coords);
+                                totalDist += prevCoords.distanceTo(currCoords);
+                                prevCoords = currCoords;
                             }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(context.parsed);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            const itineraryData = [
-                { day: 1, date: '21.03', title: 'Podróż i Przyjazd', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Wylot z Warszawy, przylot do Tokio, transfer do hotelu i wieczorny spacer po Shinjuku.' },
-                { day: 2, date: '22.03', title: 'Asakusa i Akihabara', location: 'Tokio', tags: ['culture', 'pop', 'kanto'], description: 'Zwiedzanie świątyni Sensō-ji, a po południu zanurzenie się w świecie elektroniki i popkultury w Akihabarze.' },
-                { day: 3, date: '23.03', title: 'Shibuya i Harajuku', location: 'Tokio', tags: ['culture', 'pop', 'kanto'], description: 'Oglądanie słynnego skrzyżowania w Shibuyi, spacer po modnej ulicy Takeshita i wyciszenie w świątyni Meiji Jingu.' },
-                { day: 4, date: '24.03', title: 'Ikebukuro i Nakameguro', location: 'Tokio', tags: ['pop', 'nature', 'kanto'], description: 'Eksploracja Sunshine City w Ikebukuro i podziwianie kwitnących wiśni wzdłuż rzeki w Nakameguro.' },
-                { day: 5, date: '25.03', title: 'Kamakura', location: 'Wycieczka z Tokio', tags: ['culture', 'nature', 'kanto'], description: 'Całodniowa wycieczka do dawnej stolicy shogunatu. Zwiedzanie świątyń Hasedera i Kencho-ji.' },
-                { day: 6, date: '26.03', title: 'Jokohama i Enoshima', location: 'Wycieczka z Tokio', tags: ['culture', 'nature', 'kanto'], description: 'Spacer po nowoczesnym porcie w Jokohamie, a następnie odkrywanie morskich jaskiń na wyspie Enoshima.' },
-                { day: 7, date: '27.03', title: 'Hakone i Onsen', location: 'Hakone', tags: ['nature', 'kanto'], description: 'Przejazd do Hakone, rejs po jeziorze Ashi z widokiem na Fuji i relaksująca kąpiel w gorących źródłach.' },
-                { day: 8, date: '28.03', title: 'Przyjazd do Kioto', location: 'Kioto', tags: ['travel', 'kansai'], description: 'Przejazd shinkansenem do Kioto, zakwaterowanie i pierwszy spacer po dawnej stolicy.' },
-                { day: 9, date: '29.03', title: 'Świątynie Kioto (Wschód)', location: 'Kioto', tags: ['culture', 'kansai'], description: 'Wizyta w słynnej świątyni Kiyomizu-dera i spacer po historycznej dzielnicy Higashiyama.' },
-                { day: 10, date: '30.03', title: 'Filozoficzna Ścieżka', location: 'Kioto', tags: ['culture', 'nature', 'kansai'], description: 'Spacer Ścieżką Filozofa od Srebrnego Pawilonu (Ginkakuji) i zwiedzanie świątyni Sanjūsangendō.' },
-                { day: 11, date: '31.03', title: 'Gion i Kuchnia Kaiseki', location: 'Kioto', tags: ['culture', 'food', 'kansai'], description: 'Odkrywanie dzielnicy gejsz Gion i kulinarna uczta w formie tradycyjnej kolacji kaiseki.' },
-                { day: 12, date: '01.04', title: 'Warsztaty i Degustacje', location: 'Tokio', tags: ['culture', 'food', 'kanto'], description: 'Powrót do Tokio. Udział w warsztatach tworzenia pałeczek i degustacja sake lub japońskiej whisky.' },
-                { day: 13, date: '02.04', title: 'Dzień Wolny', location: 'Tokio', tags: ['pop', 'nature', 'kanto'], description: 'Czas na własne odkrycia: wycieczka do Nary, wizyta w muzeum teamLab Borderless lub relaks w onsenie.' },
-                { day: 14, date: '03.04', title: 'Ostatnie Zakupy', location: 'Tokio', tags: ['culture', 'kanto'], description: 'Spacer po luksusowej Ginzie i zakupy tradycyjnych pamiątek na Aoyama Square.' },
-                { day: 15, date: '04.04', title: 'Refleksja i Pakowanie', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Ostatni spacer po ulubionym parku, pakowanie i pożegnalna kolacja.' },
-                { day: 16, date: '05.04', title: 'Powrót do Polski', location: 'Tokio', tags: ['travel', 'kanto'], description: 'Transfer na lotnisko i wylot do Warszawy.' }
-            ];
-
-            const itineraryGrid = document.getElementById('itinerary-grid');
-            const filterButtons = document.querySelectorAll('.btn-filter');
-
-            const renderItinerary = (filter = 'all') => {
-                itineraryGrid.innerHTML = '';
-                const filteredData = itineraryData.filter(day => filter === 'all' || day.tags.includes(filter));
-                
-                filteredData.forEach(day => {
-                    const card = document.createElement('div');
-                    card.className = 'day-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col';
-                    card.innerHTML = `
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start mb-3">
-                                <p class="text-sm font-bold text-red-600">Dzień ${day.day}</p>
-                                <p class="text-sm text-gray-500">${day.date}</p>
-                            </div>
-                            <h4 class="text-xl font-bold mb-2">${day.title}</h4>
-                            <p class="text-sm text-gray-500 mb-4">📍 ${day.location}</p>
-                            <p class="text-gray-700 text-sm mb-4">${day.description}</p>
-                        </div>
-                        <div class="mt-auto pt-4 border-t border-gray-100">
-                            ${day.tags.map(tag => `<span class="tag tag-${tag.replace('kanto', 'travel').replace('kansai', 'travel')}">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`).join(' ')}
-                        </div>
-                    `;
-                    itineraryGrid.appendChild(card);
-                });
-            };
-
-            filterButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    filterButtons.forEach(btn => {
-                        btn.classList.remove('active-filter');
-                        btn.classList.add('inactive-filter');
+                        });
+                        // Convert to KM with 1 decimal place
+                        day.totalKm = hasCoords ? (totalDist / 1000).toFixed(1) : 0;
                     });
-                    button.classList.add('active-filter');
-                    button.classList.remove('inactive-filter');
-                    renderItinerary(button.dataset.filter);
-                });
-            });
+                },
 
-            renderItinerary();
-            
-            const mapContainer = document.getElementById('map-container');
-            const canvas = document.getElementById('japan-map-canvas');
-            const tooltip = document.getElementById('map-tooltip');
-            const ctx = canvas.getContext('2d');
-            
-            const attractions = [
-                { name: 'Tokio', description: 'Główne atrakcje: Asakusa, Akihabara, Shibuya, Shinjuku, Ginza.<br><b>Dni: 1-4, 12-16</b>', x: 0.81, y: 0.56 },
-                { name: 'Jokohama', description: 'Nowoczesne miasto portowe, Chinatown, Minato Mirai.<br><b>Dzień: 6</b>', x: 0.82, y: 0.60 },
-                { name: 'Kamakura & Enoshima', description: 'Wielki Budda, świątynie i malownicza wyspa.<br><b>Dzień: 5 & 6</b>', x: 0.80, y: 0.65 },
-                { name: 'Hakone', description: 'Górski kurort z widokiem na Fuji i gorącymi źródłami.<br><b>Dzień: 7</b>', x: 0.75, y: 0.68 },
-                { name: 'Kioto', description: 'Dawna stolica, serce tradycji: Gion, Fushimi Inari, Kiyomizu-dera.<br><b>Dni: 8-11</b>', x: 0.56, y: 0.65 },
-                { name: 'Nara (opcjonalnie)', description: 'Wielki Budda w Todai-ji i wolno żyjące jelenie.<br><b>Dzień: 13</b>', x: 0.59, y: 0.68 }
-            ];
+                focusDay(day) {
+                    // Clean Map
+                    if (this.routeLine) this.map.removeLayer(this.routeLine);
+                    this.markers.forEach(m => this.map.removeLayer(m));
+                    this.distLabels.forEach(l => this.map.removeLayer(l));
+                    this.markers = [];
+                    this.distLabels = [];
 
-            const islandPaths = {
-                honshu: [
-                    {x:0.85,y:0.52},{x:0.8,y:0.45},{x:0.75,y:0.4},{x:0.65,y:0.35},{x:0.55,y:0.3},{x:0.45,y:0.35},{x:0.4,y:0.45},{x:0.45,y:0.55},{x:0.5,y:0.6},{x:0.55,y:0.65},{x:0.52,y:0.75},{x:0.58,y:0.8},{x:0.65,y:0.75},{x:0.75,y:0.7},{x:0.82,y:0.6}
-                ],
-                hokkaido: [
-                    {x:0.8,y:0.1},{x:0.9,y:0.15},{x:0.85,y:0.3},{x:0.75,y:0.25}
-                ],
-                kyushu: [
-                    {x:0.2,y:0.8},{x:0.3,y:0.7},{x:0.4,y:0.85},{x:0.3,y:0.95}
-                ],
-                shikoku: [
-                    {x:0.4,y:0.75},{x:0.48,y:0.72},{x:0.5,y:0.8},{x:0.42,y:0.82}
-                ]
-            };
+                    // 1. Hotel Marker
+                    const hotel = this.hotels[day.hotelKey];
+                    const points = [hotel.coords]; 
+                    
+                    const hotelMarker = L.marker(hotel.coords, {
+                        icon: L.divIcon({className: '', html: `<div class="hotel-icon">🏨</div>`, iconSize: [30,30]})
+                    }).addTo(this.map).bindPopup(`<b>${hotel.name}</b><br>Baza`);
+                    this.markers.push(hotelMarker);
 
-            function drawMap() {
-                const rect = mapContainer.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                    // 2. Tasks Markers & Distance Calc
+                    let prevLatLng = L.latLng(hotel.coords);
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = '#d4e4d4';
-                ctx.strokeStyle = '#8ab68a';
-                ctx.lineWidth = 2;
+                    day.tasks.forEach((task, index) => {
+                        if(task.coords) {
+                            const currLatLng = L.latLng(task.coords);
+                            points.push(task.coords);
 
-                for (const island in islandPaths) {
-                    const path = islandPaths[island];
-                    ctx.beginPath();
-                    ctx.moveTo(path[0].x * canvas.width, path[0].y * canvas.height);
-                    for (let i = 1; i < path.length; i++) {
-                        ctx.lineTo(path[i].x * canvas.width, path[i].y * canvas.height);
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                }
+                            // Calculate Distance from Previous point
+                            const distMeters = prevLatLng.distanceTo(currLatLng);
+                            const distKm = (distMeters / 1000).toFixed(1) + ' km';
 
-                attractions.forEach(att => {
-                    ctx.beginPath();
-                    ctx.arc(att.x * canvas.width, att.y * canvas.height, 8, 0, 2 * Math.PI, false);
-                    ctx.fillStyle = '#DC2626';
-                    ctx.fill();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = 'white';
-                    ctx.stroke();
-                });
-            }
+                            // Midpoint for label
+                            const midLat = (prevLatLng.lat + currLatLng.lat) / 2;
+                            const midLng = (prevLatLng.lng + currLatLng.lng) / 2;
 
-            canvas.addEventListener('mousemove', function(e) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-                let hovered = false;
+                            // Distance Label
+                            const distLabel = L.marker([midLat, midLng], {
+                                icon: L.divIcon({ className: 'dist-label', html: distKm })
+                            }).addTo(this.map);
+                            this.distLabels.push(distLabel);
 
-                attractions.forEach(att => {
-                    const pinX = att.x * canvas.width;
-                    const pinY = att.y * canvas.height;
-                    const distance = Math.sqrt(Math.pow(mouseX - pinX, 2) + Math.pow(mouseY - pinY, 2));
+                            // Point Marker
+                            const marker = L.marker(task.coords, {
+                                icon: L.divIcon({className: '', html: `<div class="number-icon">${index + 1}</div>`, iconSize: [28,28]})
+                            }).addTo(this.map).bindPopup(`<b>${index + 1}. ${task.name}</b><br>${task.transport}`);
+                            this.markers.push(marker);
 
-                    if (distance < 12) {
-                        tooltip.style.display = 'block';
-                        tooltip.style.opacity = '1';
-                        tooltip.innerHTML = `<strong>${att.name}</strong><br>${att.description}`;
-                        tooltip.style.left = `${e.clientX - rect.left + 15}px`;
-                        tooltip.style.top = `${e.clientY - rect.top + 15}px`;
-                        hovered = true;
-                    }
-                });
-
-                if (!hovered) {
-                    tooltip.style.opacity = '0';
-                    setTimeout(() => {
-                        if (tooltip.style.opacity === '0') {
-                           tooltip.style.display = 'none';
+                            prevLatLng = currLatLng;
                         }
-                    }, 200);
+                    });
+
+                    // 3. Draw Line
+                    if (points.length > 1) {
+                        this.routeLine = L.polyline(points, {
+                            color: '#bc13fe', weight: 4, opacity: 0.8, dashArray: '0'
+                        }).addTo(this.map);
+                        this.map.flyToBounds(L.latLngBounds(points), { padding: [50, 50], duration: 1 });
+                    }
+                },
+
+                isChecked(name) { return this.checked.includes(name); },
+                toggleCheck(name) {
+                    if (this.checked.includes(name)) this.checked = this.checked.filter(i => i !== name);
+                    else {
+                        this.checked.push(name);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }
+                    localStorage.setItem('jp_v5_checked', JSON.stringify(this.checked));
+                },
+                resetTrip() {
+                    if(confirm("Czyścimy pamięć?")) {
+                        this.checked = [];
+                        localStorage.removeItem('jp_v5_checked');
+                        location.reload();
+                    }
                 }
-            });
-
-            window.addEventListener('resize', drawMap);
-            
-            if (sections.map.classList.contains('hidden') === false) {
-                drawMap();
             }
-        });
-
+        }
     </script>
 </body>
 </html>
