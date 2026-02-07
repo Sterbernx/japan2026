@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>🇯🇵 JAPONIA V7 CYBER</title>
+    <title>🇯🇵 JAPONIA V8 GOD MODE</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -20,15 +20,13 @@
                         neonCyan: '#00f2ff',
                         neonGold: '#ffd700',
                         neonPurple: '#bc13fe',
+                        neonGreen: '#39ff14',
                         bgBlack: '#050505',
                         bgCard: '#111111'
                     },
                     fontFamily: {
                         'teko': ['Teko', 'sans-serif'],
                         'inter': ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -38,8 +36,8 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; }
         
-        /* Mapa */
-        #map { height: 35vh; width: 100%; z-index: 1; border-bottom: 1px solid #333; }
+        /* Fix Mapy */
+        #map { height: 100%; width: 100%; z-index: 1; background: #000; }
         .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -56,6 +54,10 @@
             border-radius: 8px; text-align: center; font-size: 20px; line-height: 30px; z-index: 999;
             box-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
         }
+        
+        /* Animacje */
+        .tab-content { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -64,83 +66,93 @@
 
 <body class="h-screen flex flex-col overflow-hidden bg-bgBlack" x-data="travelApp()" x-init="initApp()">
 
-    <div class="h-1 w-full bg-gray-900 z-50">
-        <div class="h-full bg-gradient-to-r from-neonPink via-neonPurple to-neonCyan transition-all duration-700 ease-out shadow-[0_0_10px_#00f2ff]" 
-             :style="`width: ${globalProgress}%`"></div>
-    </div>
-
-    <header class="flex-none bg-bgCard border-b border-gray-800 p-3 flex justify-between items-center z-20">
-        <div>
-            <h1 class="font-teko text-2xl tracking-widest text-white leading-none">JAPONIA <span class="text-neonCyan">V7</span></h1>
-            <div class="text-[10px] text-gray-500 font-bold tracking-widest" x-text="todayDate"></div>
+    <header class="flex-none bg-bgCard border-b border-gray-800 p-3 flex justify-between items-center z-20 shadow-lg">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🇯🇵</span>
+            <div>
+                <h1 class="font-teko text-2xl tracking-widest text-white leading-none">GOD MODE</h1>
+                <div class="text-[10px] text-neonCyan font-bold tracking-widest" x-text="currentTime"></div>
+            </div>
         </div>
         <div class="text-right">
-             <div class="text-xs text-gray-400 font-bold">POSTĘP</div>
-             <div class="font-teko text-xl text-neonCyan" x-text="globalProgress + '%'"></div>
+             <div class="text-[9px] text-gray-400 font-bold uppercase">Do Wylotu</div>
+             <div class="font-teko text-xl text-neonPink animate-pulse" x-text="countdownStr"></div>
         </div>
     </header>
 
     <main class="flex-1 overflow-y-auto bg-black relative z-10 no-scrollbar pb-24">
         
-        <div x-show="activeTab === 'dash'" class="p-4 space-y-6 animate-fade-in">
+        <div x-show="activeTab === 'dash'" class="p-4 space-y-4 tab-content">
             
-            <div class="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 text-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-neonPink"></div>
-                <div class="text-xs text-gray-400 uppercase tracking-widest mb-2">Do Wylotu (22.03.2026) zostało:</div>
-                <div class="flex justify-center gap-4 font-teko text-4xl text-white">
-                    <div>
-                        <span x-text="countdown.days"></span><span class="text-sm text-gray-500 block -mt-2">DNI</span>
-                    </div>
-                    <div>:</div>
-                    <div>
-                        <span x-text="countdown.hours"></span><span class="text-sm text-gray-500 block -mt-2">GODZ</span>
-                    </div>
-                </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button @click="activeTab = 'splitter'" class="bg-gray-900 border border-gray-700 p-4 rounded-xl flex flex-col items-center hover:border-neonGreen transition-colors">
+                    <span class="text-3xl mb-1">💸</span>
+                    <span class="text-xs font-bold text-gray-300">ROZLICZ HAJS</span>
+                </button>
+                <button @click="activeTab = 'sos'" class="bg-gray-900 border border-gray-700 p-4 rounded-xl flex flex-col items-center hover:border-red-500 transition-colors">
+                    <span class="text-3xl mb-1">🆘</span>
+                    <span class="text-xs font-bold text-gray-300">RATUNEK</span>
+                </button>
             </div>
 
-            <div class="bg-gray-900/50 rounded-2xl p-5 border border-neonCyan/30">
-                <h3 class="text-neonCyan font-bold mb-3 flex items-center gap-2">💴 Szybki Przelicznik</h3>
+            <div class="bg-[#111] rounded-2xl p-5 border border-neonCyan/30 shadow-[0_0_15px_rgba(0,242,255,0.1)]">
+                <h3 class="text-neonCyan font-bold mb-3 text-sm tracking-wider">💴 SZYBKI PRZELICZNIK</h3>
                 <div class="flex gap-2 items-center">
                     <div class="flex-1">
-                        <label class="text-[10px] text-gray-500">JENY (JPY)</label>
-                        <input type="number" x-model="yenInput" placeholder="np. 1000" class="w-full bg-black border border-gray-700 rounded p-2 text-white font-mono focus:border-neonCyan outline-none">
+                        <input type="number" x-model="yenInput" placeholder="JPY" class="w-full bg-black border border-gray-700 rounded p-3 text-white font-mono text-lg focus:border-neonCyan outline-none text-center">
                     </div>
-                    <div class="text-2xl text-gray-600">=</div>
+                    <div class="text-gray-500">➜</div>
                     <div class="flex-1">
-                        <label class="text-[10px] text-gray-500">ZŁOTE (PLN)</label>
-                        <div class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-neonGold font-mono font-bold" x-text="convertedPln"></div>
+                        <div class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-neonGold font-mono font-bold text-lg text-center" x-text="convertedPln"></div>
                     </div>
                 </div>
-                <p class="text-[9px] text-gray-600 mt-2 text-center italic">*Kurs orientacyjny 1000 JPY ≈ 26 PLN</p>
             </div>
 
-            <div class="bg-gray-900/50 rounded-2xl p-5 border border-neonPurple/30">
-                <h3 class="text-neonPurple font-bold mb-3">🗣️ Rozmówki Ratunkowe</h3>
-                <div class="space-y-2">
+            <div class="bg-[#111] rounded-2xl p-5 border border-neonPurple/30">
+                <h3 class="text-neonPurple font-bold mb-3 text-sm tracking-wider">🗣️ MÓWIĄCE ROZMÓWKI</h3>
+                <div class="space-y-3">
                     <template x-for="phrase in phrases">
                         <div class="flex justify-between items-center border-b border-gray-800 pb-2 last:border-0">
                             <div>
-                                <div class="text-sm text-white" x-text="phrase.pl"></div>
-                                <div class="text-[10px] text-gray-400 italic" x-text="phrase.pron"></div>
+                                <div class="text-sm text-white font-bold" x-text="phrase.pl"></div>
+                                <div class="text-[10px] text-gray-500 italic" x-text="phrase.pron"></div>
                             </div>
-                            <div class="text-neonPurple font-bold text-sm" x-text="phrase.jp"></div>
+                            <button @click="speak(phrase.jp)" class="bg-neonPurple/20 text-neonPurple border border-neonPurple/50 px-3 py-1 rounded-full text-xs font-bold hover:bg-neonPurple hover:text-white transition-colors flex items-center gap-1">
+                                🔊 <span x-text="phrase.label || 'Mów'"></span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="bg-[#111] rounded-2xl p-5 border border-gray-700">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-gray-300 font-bold text-sm tracking-wider">🎒 PAMIĘTAJ ZABRAĆ</h3>
+                    <span class="text-xs text-neonGreen" x-text="packedCount + '/' + checklist.length"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <template x-for="(item, index) in checklist">
+                        <div @click="togglePack(index)" class="cursor-pointer p-2 rounded border text-xs font-bold flex items-center gap-2 transition-all"
+                             :class="item.done ? 'bg-neonGreen/10 border-neonGreen text-neonGreen' : 'bg-gray-900 border-gray-700 text-gray-500'">
+                            <span x-text="item.done ? '✅' : '⬜'"></span>
+                            <span x-text="item.name"></span>
                         </div>
                     </template>
                 </div>
             </div>
         </div>
 
-        <div x-show="activeTab === 'plan'" class="flex flex-col h-full">
-            <div class="flex-none relative bg-black z-0 h-[35vh] border-b border-gray-800">
-                <div id="map" class="h-full w-full"></div>
-                <div class="absolute bottom-2 left-2 z-[500] bg-black/80 px-2 py-1 rounded border border-neonCyan text-[10px] text-neonCyan">
-                    <span x-text="currentDayTitle"></span>
+        <div x-show="activeTab === 'plan'" class="flex flex-col h-full tab-content">
+            <div class="flex-none relative bg-black z-0 h-[40vh] border-b border-gray-800 w-full">
+                <div id="map"></div>
+                <div class="absolute bottom-2 right-2 z-[500] flex gap-2">
+                    <button @click="locateMe()" class="bg-black/80 p-2 rounded border border-white text-white text-xs">📍 Gdzie ja jestem?</button>
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-2 pb-24">
                 <template x-for="(day, index) in allDays" :key="day.id">
-                    <div class="mb-4 bg-bgCard rounded-xl border border-gray-800 overflow-hidden">
+                    <div class="mb-3 bg-bgCard rounded-xl border border-gray-800 overflow-hidden">
                         
                         <div @click="focusDay(day)" 
                              class="p-4 flex justify-between items-center cursor-pointer transition-colors hover:bg-white/5 border-l-4"
@@ -149,41 +161,30 @@
                                 <div class="font-teko text-xl text-white" x-text="day.date"></div>
                                 <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" x-text="day.title"></div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] bg-gray-800 px-2 py-1 rounded text-gray-300" x-text="day.totalKm ? day.totalKm + ' km' : '-'"></span>
-                                <div class="text-neonCyan transform transition-transform" :class="currentDayId === day.id ? 'rotate-90' : ''">➤</div>
-                            </div>
+                            <div class="text-neonCyan transform transition-transform" :class="currentDayId === day.id ? 'rotate-90' : ''">➤</div>
                         </div>
 
-                        <div x-show="currentDayId === day.id" x-transition class="border-t border-gray-800 bg-black/50 p-2 space-y-2">
-                            
-                            <div class="text-[10px] text-gray-500 flex items-center gap-2 p-2">
-                                <span>🏨 Start:</span> <span class="text-white font-bold" x-text="hotels[day.hotelKey].name"></span>
+                        <div x-show="currentDayId === day.id" class="border-t border-gray-800 bg-black/50 p-2 space-y-2">
+                            <div class="text-[10px] text-gray-500 flex items-center gap-2 p-1 bg-gray-900 rounded">
+                                <span>🏨 Baza:</span> <span class="text-neonPink font-bold" x-text="hotels[day.hotelKey].name"></span>
                             </div>
 
                             <template x-for="(task, i) in day.tasks" :key="task.name">
-                                <div class="bg-[#1a1a1a] rounded p-3 flex gap-3 items-start relative overflow-hidden group">
-                                    
-                                    <div class="flex-none w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs border transition-all mt-0.5"
-                                         :class="isChecked(task.name) ? 'bg-neonCyan border-neonCyan text-black' : 'border-gray-600 text-gray-500'"
-                                         x-text="i + 1">
-                                    </div>
-
-                                    <div class="flex-1 z-10">
-                                        <div class="flex justify-between items-start">
-                                            <div class="text-sm font-bold text-gray-200" :class="isChecked(task.name) ? 'line-through opacity-50' : ''" x-text="task.name"></div>
-                                            <input type="checkbox" class="w-5 h-5 accent-neonCyan rounded cursor-pointer" 
-                                                   :checked="isChecked(task.name)" @change="toggleCheck(task.name)">
+                                <div class="bg-[#1a1a1a] rounded p-3 relative group border border-gray-800/50">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex gap-3">
+                                            <div class="flex-none w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs border border-gray-600 text-gray-400" x-text="i + 1"></div>
+                                            <div>
+                                                <div class="text-sm font-bold text-gray-200" :class="isChecked(task.name) ? 'line-through opacity-50' : ''" x-text="task.name"></div>
+                                                <div class="text-[10px] text-neonCyan mt-1">🚇 <span x-text="task.transport"></span></div>
+                                            </div>
                                         </div>
-                                        <div class="text-[10px] text-neonCyan mt-1">🚇 <span x-text="task.transport"></span></div>
-                                        <div x-show="task.food" class="text-[10px] text-neonGold mt-1 italic">🍔 <span x-text="task.food"></span></div>
-                                        
-                                        <a :href="task.coords ? `https://www.google.com/maps/dir/?api=1&destination=${task.coords[0]},${task.coords[1]}&travelmode=transit` : '#'" 
-                                           target="_blank"
-                                           class="mt-2 inline-block bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-[10px] text-white font-bold border border-gray-600 transition-colors"
-                                           x-show="task.coords">
-                                           📍 NAWIGUJ
-                                        </a>
+                                        <input type="checkbox" class="w-5 h-5 accent-neonCyan rounded cursor-pointer" :checked="isChecked(task.name)" @change="toggleCheck(task.name)">
+                                    </div>
+                                    <div class="mt-2 flex gap-2">
+                                        <a x-show="task.coords" :href="`https://www.google.com/maps/dir/?api=1&destination=${task.coords[0]},${task.coords[1]}&travelmode=transit`" target="_blank" 
+                                           class="bg-gray-800 px-3 py-1 rounded text-[10px] text-white border border-gray-600">📍 Mapa</a>
+                                        <button x-show="task.food" @click="alert('Polecajka: ' + task.food)" class="bg-gray-800 px-3 py-1 rounded text-[10px] text-neonGold border border-gray-600">🍔 Żarcie</button>
                                     </div>
                                 </div>
                             </template>
@@ -193,24 +194,86 @@
             </div>
         </div>
 
+        <div x-show="activeTab === 'splitter'" class="p-4 space-y-4 tab-content h-full flex flex-col">
+            <h2 class="font-teko text-3xl text-neonGreen mb-2">ROZLICZACZ 💰</h2>
+            
+            <div class="bg-gray-900 p-4 rounded-xl border border-gray-700">
+                <div class="grid grid-cols-3 gap-2 mb-2">
+                    <input x-model="newExpense.who" list="users" placeholder="Kto?" class="bg-black p-2 rounded border border-gray-600 text-white text-sm">
+                    <datalist id="users"><option value="Aleks"><option value="Ziomek 1"><option value="Ziomek 2"></datalist>
+                    <input type="number" x-model="newExpense.amount" placeholder="Ile (JPY)" class="bg-black p-2 rounded border border-gray-600 text-white text-sm col-span-2">
+                </div>
+                <input x-model="newExpense.desc" placeholder="Za co? (np. browary)" class="w-full bg-black p-2 rounded border border-gray-600 text-white text-sm mb-3">
+                <button @click="addExpense()" class="w-full bg-neonGreen text-black font-bold py-2 rounded uppercase tracking-wider hover:bg-white transition">Dodaj Wydatek</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto bg-[#111] rounded-xl border border-gray-800 p-2">
+                <template x-for="(exp, index) in expenses">
+                    <div class="flex justify-between items-center p-2 border-b border-gray-800 text-sm">
+                        <div>
+                            <span class="font-bold text-white" x-text="exp.who"></span>
+                            <span class="text-gray-500 mx-1">zapłacił</span>
+                            <span class="text-neonGreen font-mono" x-text="exp.amount"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 truncate w-20 text-right" x-text="exp.desc"></span>
+                            <button @click="removeExpense(index)" class="text-red-500 text-xs">✕</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+             <div class="bg-gray-900 p-3 rounded-xl text-center">
+                 <div class="text-xs text-gray-400">SUMA WYDATKÓW</div>
+                 <div class="text-2xl font-mono text-white" x-text="totalExpenses + ' JPY'"></div>
+             </div>
+        </div>
+
+        <div x-show="activeTab === 'sos'" class="p-4 space-y-6 tab-content text-center">
+            <h2 class="font-teko text-4xl text-red-600 animate-pulse">EMERGENCY 🆘</h2>
+            
+            <div class="space-y-4">
+                <div class="p-4 bg-red-900/20 border border-red-600 rounded-xl">
+                    <div class="text-xs text-red-400 uppercase font-bold">Policja</div>
+                    <div class="text-3xl font-bold text-white">110</div>
+                </div>
+                <div class="p-4 bg-red-900/20 border border-red-600 rounded-xl">
+                    <div class="text-xs text-red-400 uppercase font-bold">Pogotowie / Straż</div>
+                    <div class="text-3xl font-bold text-white">119</div>
+                </div>
+            </div>
+
+            <div class="bg-white text-black p-4 rounded-xl text-left shadow-lg">
+                <h3 class="font-bold text-lg mb-2 border-b border-gray-300 pb-1">🚖 Dla Taksówkarza</h3>
+                <p class="text-xl font-bold mb-1">Koko made onegaishimasu:</p>
+                <p class="text-sm text-gray-600 italic">(Proszę zawieźć mnie tutaj)</p>
+                <div class="mt-3 bg-gray-100 p-2 rounded border border-gray-300">
+                    <p class="font-bold text-lg">Hotel Galicia Ryogoku</p>
+                    <p class="text-sm">4-31-6 Ryogoku, Sumida-ku, Tokyo</p>
+                </div>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-10">
+                Ambasada RP w Tokio: 2-13-5 Mita, Meguro-ku<br>
+                Tel: +81 3 5794 7020
+            </div>
+        </div>
+
     </main>
 
-    <nav class="flex-none bg-black border-t border-gray-800 pb-safe z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.8)]">
+    <nav class="flex-none bg-black border-t border-gray-800 pb-safe z-50">
         <div class="flex justify-around items-center h-16">
-            
-            <button @click="activeTab = 'dash'" class="flex flex-col items-center w-1/3 transition-all duration-300" :class="activeTab === 'dash' ? 'text-neonPurple scale-110' : 'text-gray-600'">
-                <span class="text-2xl mb-1">🚀</span>
-                <span class="text-[9px] font-bold tracking-widest">GADŻETY</span>
+            <button @click="activeTab = 'dash'" :class="activeTab === 'dash' ? 'text-white scale-110' : 'text-gray-600'" class="flex flex-col items-center w-1/4 transition-all">
+                <span class="text-xl">🏠</span><span class="text-[9px] font-bold mt-1">START</span>
             </button>
-
-            <button @click="activeTab = 'plan'" class="flex flex-col items-center w-1/3 transition-all duration-300" :class="activeTab === 'plan' ? 'text-neonCyan scale-110' : 'text-gray-600'">
-                <span class="text-2xl mb-1">🗺️</span>
-                <span class="text-[9px] font-bold tracking-widest">PLAN & MAPA</span>
+            <button @click="activeTab = 'plan'" :class="activeTab === 'plan' ? 'text-neonCyan scale-110' : 'text-gray-600'" class="flex flex-col items-center w-1/4 transition-all">
+                <span class="text-xl">🗺️</span><span class="text-[9px] font-bold mt-1">PLAN</span>
             </button>
-            
-            <button @click="resetTrip()" class="flex flex-col items-center w-1/3 text-gray-800 active:text-red-600 transition-colors">
-                <span class="text-xl mb-1">🗑️</span>
-                <span class="text-[9px] font-bold tracking-widest">RESET</span>
+            <button @click="activeTab = 'splitter'" :class="activeTab === 'splitter' ? 'text-neonGreen scale-110' : 'text-gray-600'" class="flex flex-col items-center w-1/4 transition-all">
+                <span class="text-xl">💸</span><span class="text-[9px] font-bold mt-1">HAJS</span>
+            </button>
+            <button @click="activeTab = 'sos'" :class="activeTab === 'sos' ? 'text-red-500 scale-110' : 'text-gray-600'" class="flex flex-col items-center w-1/4 transition-all">
+                <span class="text-xl">🆘</span><span class="text-[9px] font-bold mt-1">HELP</span>
             </button>
         </div>
     </nav>
@@ -218,216 +281,184 @@
     <script>
         function travelApp() {
             return {
-                activeTab: 'dash', // Start od Dashboardu żeby zobaczyć licznik
-                map: null,
-                markers: [],
-                routeLine: null,
-                currentDayId: null,
-                currentDayTitle: 'Wybierz dzień z listy',
-                checked: JSON.parse(localStorage.getItem('jp_v7_checked')) || [],
-                
-                // GADGETS DATA
+                activeTab: 'dash', 
+                map: null, markers: [], routeLine: null,
+                currentDayId: 'd1',
+                currentTime: '',
+                countdownStr: '',
                 yenInput: '',
-                countdown: { days: 0, hours: 0 },
-                todayDate: new Date().toLocaleDateString('pl-PL'),
-                phrases: [
-                    { pl: 'Dziękuję', jp: 'Arigatou gozaimasu', pron: 'Arigato gozajmas' },
-                    { pl: 'Przepraszam', jp: 'Sumimasen', pron: 'Sumimasen' },
-                    { pl: 'Poproszę to', jp: 'Kore o kudasai', pron: 'Kore o kudasaj' },
-                    { pl: 'Gdzie jest toaleta?', jp: 'Toire wa doko desu ka?', pron: 'Tojre ła doko deska' },
-                    { pl: 'Dwa piwa', jp: 'Biru futatsu', pron: 'Biru futatsu' },
-                    { pl: 'Rachunek poproszę', jp: 'O-kaikei onegaishimasu', pron: 'Okajke onegajshimas' }
+                
+                // DATA
+                checked: JSON.parse(localStorage.getItem('jp_v8_checked')) || [],
+                expenses: JSON.parse(localStorage.getItem('jp_v8_expenses')) || [],
+                checklist: JSON.parse(localStorage.getItem('jp_v8_pack')) || [
+                    {name: 'Paszport', done: false}, {name: 'Powerbank', done: false}, 
+                    {name: 'Adapter JP', done: false}, {name: 'Skarpetki', done: false},
+                    {name: 'Bielizna', done: false}, {name: 'Leki', done: false},
+                    {name: 'Hajs (YEN)', done: false}, {name: 'Ubezpieczenie', done: false}
                 ],
+                newExpense: { who: '', amount: '', desc: '' },
 
                 hotels: {
-                    'galicia': { name: 'Galicia Ryogoku', coords: [35.6930, 139.7924] },
-                    'lion': { name: 'Le Lion d\'or (Kioto)', coords: [35.0080, 135.7700] },
-                    'tomi': { name: 'TOMI Hotel', coords: [35.6650, 139.8700] }
+                    [cite_start]'galicia': { name: 'Galicia Ryogoku [cite: 4]', coords: [35.6930, 139.7924] },
+                    [cite_start]'lion': { name: 'Le Lion d\'or [cite: 50]', coords: [35.0080, 135.7700] },
+                    [cite_start]'tomi': { name: 'TOMI Hotel [cite: 74]', coords: [35.6650, 139.8700] }
                 },
 
-                // PEŁNA LISTA (Skrócona dla czytelności kodu, ale logika ta sama co w V6)
+                // Itinerary based on user provided PDF
                 allDays: [
-                    { 
-                        id: 'd1', date: '23.03', title: 'ASAKUSA', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
-                        tasks: [
-                            { name: 'Sensō-ji Temple', coords: [35.7147, 139.7966], transport: 'Spacer', food: 'Melonpan' },
-                            { name: 'Park Ueno', coords: [35.7140, 139.7740], transport: 'Metro Ginza', food: 'Street food Ameyoko' },
-                            { name: 'Daikoku-yu Onsen', coords: [35.7077, 139.8056], transport: 'Taxi', food: 'Mleko kawowe' }
-                        ]
-                    },
-                    {
-                        id: 'd2', date: '24.03', title: 'CENTRUM', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
-                        tasks: [
-                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], transport: 'Oedo Line', food: 'Sushi Daiwa' },
-                            { name: 'Akihabara', coords: [35.7022, 139.7741], transport: 'Yamanote', food: 'Go Go Curry' }
-                        ]
-                    },
-                    {
-                        id: 'd3', date: '25.03', title: 'SHIBUYA (HARD)', hotelKey: 'galicia', colorClass: 'border-red-500', totalKm: 0,
-                        tasks: [
-                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], transport: 'Odakyu Line', food: 'Kawa & Curry' },
-                            { name: 'Shibuya Crossing', coords: [35.6595, 139.7004], transport: 'Inokashira', food: 'Genki Sushi' },
-                            { name: 'Shibuya Sky', coords: [35.6585, 139.7018], transport: 'Spacer', food: 'Widoki' }
-                        ]
-                    },
-                    {
-                        id: 'd4', date: '26.03', title: 'CHILL', hotelKey: 'galicia', colorClass: 'border-neonPink', totalKm: 0,
-                        tasks: [
-                            { name: 'Nakameguro', coords: [35.6443, 139.6990], transport: 'Hibiya Line', food: 'Truskawki i szampan' },
-                            { name: 'Shinjuku Kabukicho', coords: [35.6938, 139.7035], transport: 'Yamanote', food: 'Yakitori na Omoide Yokocho' }
-                        ]
-                    },
-                    {
-                        id: 'd5', date: '27.03', title: 'WYCIECZKA', hotelKey: 'galicia', colorClass: 'border-neonGold', totalKm: 0,
-                        tasks: [
-                            { name: 'Kamakura (Budda)', coords: [35.3168, 139.5361], transport: 'JR Yokosuka', food: 'Lody batatowe' },
-                            { name: 'Enoshima', coords: [35.3016, 139.4814], transport: 'Enoden', food: 'Ryż z rybkami' }
-                        ]
-                    },
-                     {
-                        id: 'd6', date: '28.03', title: 'KIOTO START', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], transport: 'Taxi', food: 'Ciastka Yatsuhashi' },
-                            { name: 'Gion', coords: [35.0054, 135.7745], transport: 'Spacer', food: 'Matcha' }
-                        ]
-                    },
-                    {
-                        id: 'd7', date: '29.03', title: 'INARI', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Fushimi Inari', coords: [34.9671, 135.7726], transport: 'Keihan Line', food: 'Kitsune Udon' }
-                        ]
-                    },
-                    {
-                        id: 'd9', date: '31.03', title: 'NARA', hotelKey: 'lion', colorClass: 'border-neonPurple', totalKm: 0,
-                        tasks: [
-                            { name: 'Nara Park', coords: [34.6850, 135.8430], transport: 'Kintetsu', food: 'Mochi (Nakatanidou)' }
-                        ]
-                    },
-                    {
-                        id: 'd10', date: '01.04', title: 'POWRÓT', hotelKey: 'tomi', colorClass: 'border-neonCyan', totalKm: 0,
-                        tasks: [
-                            { name: 'TeamLab Planets', coords: [35.6154, 139.7956], transport: 'Yurikamome', food: 'Ramen' },
-                            { name: 'Don Quijote', coords: null, transport: 'Wszędzie', food: 'KitKat Wasabi' }
-                        ]
-                    }
+                    { id: 'd1', date: '23.03', title: 'ASAKUSA', hotelKey: 'galicia', colorClass: 'border-neonPink', tasks: [
+                        { name: 'Sensō-ji', coords: [35.7147, 139.7966], transport: 'Spacer', food: 'Melonpan' },
+                        [cite_start]{ name: 'Park Ueno [cite: 13]', coords: [35.7140, 139.7740], transport: 'Ginza Line', food: 'Street food' },
+                        [cite_start]{ name: 'Daikoku-yu Onsen [cite: 12]', coords: [35.7077, 139.8056], transport: 'Taxi', food: 'Mleko' }
+                    ]},
+                    { id: 'd2', date: '24.03', title: 'CENTRUM', hotelKey: 'galicia', colorClass: 'border-neonPink', tasks: [
+                        [cite_start]{ name: 'Tsukiji Market [cite: 18]', coords: [35.6654, 139.7706], transport: 'Oedo Line', food: 'Sushi' },
+                        [cite_start]{ name: 'Akihabara [cite: 21]', coords: [35.7022, 139.7741], transport: 'Yamanote', food: 'Maid Cafe' }
+                    ]},
+                    { id: 'd3', date: '25.03', title: 'WEST (HARD)', hotelKey: 'galicia', colorClass: 'border-red-500', tasks: [
+                        [cite_start]{ name: 'Gotokuji [cite: 25]', coords: [35.6482, 139.6483], transport: 'Odakyu', food: '-' },
+                        [cite_start]{ name: 'Shibuya Crossing [cite: 27]', coords: [35.6595, 139.7004], transport: 'Inokashira', food: 'Genki Sushi' }
+                    ]},
+                    { id: 'd4', date: '26.03', title: 'CHILL', hotelKey: 'galicia', colorClass: 'border-neonPink', tasks: [
+                        [cite_start]{ name: 'Nakameguro [cite: 39]', coords: [35.6443, 139.6990], transport: 'Hibiya', food: 'Szampan' },
+                        [cite_start]{ name: 'Shinjuku [cite: 33]', coords: [35.6938, 139.7035], transport: 'Yamanote', food: 'Yakitori' }
+                    ]},
+                    { id: 'd5', date: '27.03', title: 'TRIP', hotelKey: 'galicia', colorClass: 'border-neonGold', tasks: [
+                        [cite_start]{ name: 'Kamakura [cite: 42]', coords: [35.3168, 139.5361], transport: 'JR', food: 'Lody' },
+                        [cite_start]{ name: 'Enoshima [cite: 43]', coords: [35.3016, 139.4814], transport: 'Enoden', food: 'Ryby' }
+                    ]},
+                    { id: 'd6', date: '28.03', title: 'KIOTO START', hotelKey: 'lion', colorClass: 'border-neonPurple', tasks: [
+                        [cite_start]{ name: 'Kiyomizu-dera [cite: 52]', coords: [34.9948, 135.7850], transport: 'Taxi', food: 'Yatsuhashi' },
+                        [cite_start]{ name: 'Gion [cite: 54]', coords: [35.0054, 135.7745], transport: 'Spacer', food: 'Kaiseki' }
+                    ]},
+                    { id: 'd7', date: '29.03', title: 'INARI', hotelKey: 'lion', colorClass: 'border-neonPurple', tasks: [
+                        [cite_start]{ name: 'Fushimi Inari [cite: 58]', coords: [34.9671, 135.7726], transport: 'Keihan', food: 'Udon' }
+                    ]},
+                    { id: 'd9', date: '31.03', title: 'NARA', hotelKey: 'lion', colorClass: 'border-neonPurple', tasks: [
+                        [cite_start]{ name: 'Nara Park [cite: 66]', coords: [34.6850, 135.8430], transport: 'Kintetsu', food: 'Mochi' }
+                    ]},
+                    { id: 'd10', date: '01.04', title: 'POWRÓT', hotelKey: 'tomi', colorClass: 'border-neonCyan', tasks: [
+                        [cite_start]{ name: 'Check-in TOMI [cite: 74]', coords: [35.6650, 139.8700], transport: 'Taxi', food: '-' },
+                        [cite_start]{ name: 'Zakupy [cite: 80]', coords: null, transport: 'Wszędzie', food: 'KitKat' }
+                    ]}
                 ],
 
-                get convertedPln() {
-                    if(!this.yenInput) return '0.00';
-                    return (this.yenInput * 0.0265).toFixed(2) + ' zł';
-                },
+                phrases: [
+                    { pl: 'Dziękuję', jp: 'Arigatou gozaimasu', pron: 'Arigato gozajmas', label: 'Arigatou' },
+                    { pl: 'Przepraszam', jp: 'Sumimasen', pron: 'Sumimasen', label: 'Sumimasen' },
+                    { pl: 'Piwo poproszę', jp: 'Biru o kudasai', pron: 'Biru o kudasaj', label: 'Piwo' },
+                    { pl: 'Rachunek', jp: 'Okaikei onegaishimasu', pron: 'Okajke', label: 'Rachunek' },
+                    { pl: 'Toaleta?', jp: 'Toire wa doko desu ka?', pron: 'Tojre ła doko', label: 'Kibel' },
+                    { pl: 'Nie rozumiem', jp: 'Wakarimasen', pron: 'Łakarimasen', label: '???' }
+                ],
 
-                get globalProgress() {
-                    let total = 0; this.allDays.forEach(d => total += d.tasks.length);
-                    if (total === 0) return 0;
-                    return Math.round((this.checked.length / total) * 100);
-                },
+                // COMPUTED
+                get convertedPln() { return this.yenInput ? (this.yenInput * 0.027).toFixed(2) + ' zł' : '0.00 zł'; },
+                get totalExpenses() { return this.expenses.reduce((sum, item) => sum + parseInt(item.amount || 0), 0); },
+                get packedCount() { return this.checklist.filter(i => i.done).length; },
 
                 initApp() {
-                    // Start Countdown
-                    this.updateCountdown();
-                    setInterval(() => this.updateCountdown(), 60000);
+                    // Zegar
+                    setInterval(() => {
+                        const now = new Date();
+                        this.currentTime = now.toLocaleTimeString('pl-PL', {hour: '2-digit', minute:'2-digit'});
+                        // Countdown
+                        const tripDate = new Date('2026-03-22T20:00:00');
+                        const diff = tripDate - now;
+                        if(diff > 0) {
+                            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            this.countdownStr = `${d} DNI`;
+                        } else this.countdownStr = "TRIP TRWA!";
+                    }, 1000);
 
-                    // Calc Distances
-                    this.calculateAllDistances();
-
-                    // Init Map (Tylko jeśli widoczna)
-                    this.$watch('activeTab', value => {
-                        if (value === 'plan' && !this.map) {
+                    // FIX MAPY - Watcher
+                    this.$watch('activeTab', (val) => {
+                        if(val === 'plan') {
+                            // Czekamy chwilę aż div się pojawi (display: block) i wtedy renderujemy mapę
                             setTimeout(() => {
-                                this.initMap();
+                                if(!this.map) this.initMap();
+                                else this.map.invalidateSize(); // TO JEST KLUCZOWE!
                                 this.focusDay(this.allDays[0]);
-                                this.currentDayId = 'd1';
-                            }, 100);
+                            }, 150);
                         }
                     });
                 },
 
-                updateCountdown() {
-                    const target = new Date('2026-03-22T20:00:00');
-                    const now = new Date();
-                    const diff = target - now;
-                    if (diff > 0) {
-                        this.countdown.days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                        this.countdown.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    } else {
-                        this.countdown = { days: 0, hours: 0 };
-                    }
-                },
-
-                calculateAllDistances() {
-                    this.allDays.forEach(day => {
-                        const hotel = this.hotels[day.hotelKey];
-                        let totalDist = 0;
-                        let prevCoords = L.latLng(hotel.coords);
-                        day.tasks.forEach(task => {
-                            if(task.coords) {
-                                const currCoords = L.latLng(task.coords);
-                                totalDist += prevCoords.distanceTo(currCoords);
-                                prevCoords = currCoords;
-                            }
-                        });
-                        day.totalKm = totalDist > 0 ? (totalDist / 1000).toFixed(1) : null;
-                    });
-                },
-
+                // MAP LOGIC
                 initMap() {
                     this.map = L.map('map', {zoomControl: false}).setView([35.6930, 139.7924], 12);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '', maxZoom: 19
-                    }).addTo(this.map);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(this.map);
                 },
 
                 focusDay(day) {
                     this.currentDayId = day.id;
-                    this.currentDayTitle = day.title;
                     if(!this.map) return;
-
-                    if (this.routeLine) this.map.removeLayer(this.routeLine);
-                    this.markers.forEach(m => this.map.removeLayer(m));
-                    this.markers = [];
-
-                    const hotel = this.hotels[day.hotelKey];
-                    const points = [hotel.coords]; 
                     
-                    const hotelMarker = L.marker(hotel.coords, {
-                        icon: L.divIcon({className: '', html: `<div class="hotel-icon">🏨</div>`, iconSize: [26,26]})
-                    }).addTo(this.map);
-                    this.markers.push(hotelMarker);
+                    // Reset
+                    this.markers.forEach(m => this.map.removeLayer(m));
+                    if(this.routeLine) this.map.removeLayer(this.routeLine);
+                    this.markers = [];
+                    
+                    const hotel = this.hotels[day.hotelKey];
+                    const points = [hotel.coords];
+                    
+                    // Hotel Pin
+                    this.markers.push(L.marker(hotel.coords, {icon: L.divIcon({html: '<div class="hotel-icon">🏨</div>', iconSize:[30,30]})}).addTo(this.map));
 
-                    day.tasks.forEach((task, index) => {
-                        if(task.coords) {
-                            points.push(task.coords);
-                            const marker = L.marker(task.coords, {
-                                icon: L.divIcon({className: '', html: `<div class="number-icon">${index + 1}</div>`, iconSize: [24,24]})
-                            }).addTo(this.map);
-                            this.markers.push(marker);
+                    // Task Pins
+                    day.tasks.forEach((t, i) => {
+                        if(t.coords) {
+                            points.push(t.coords);
+                            this.markers.push(L.marker(t.coords, {icon: L.divIcon({html: `<div class="number-icon">${i+1}</div>`, iconSize:[28,28]})}).addTo(this.map));
                         }
                     });
 
-                    if (points.length > 1) {
-                        this.routeLine = L.polyline(points, {
-                            color: '#00f2ff', weight: 4, opacity: 0.8
-                        }).addTo(this.map);
-                        this.map.flyToBounds(L.latLngBounds(points), { padding: [20, 20], duration: 0.8 });
+                    // Line
+                    if(points.length > 1) {
+                        this.routeLine = L.polyline(points, {color: '#00f2ff', weight: 4, opacity:0.8}).addTo(this.map);
+                        this.map.flyToBounds(L.latLngBounds(points), {padding:[30,30], duration:0.5});
                     }
+                },
+                
+                locateMe() {
+                    if(navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(pos => {
+                            L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(this.map).bindPopup("TY").openPopup();
+                            this.map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+                        });
+                    } else alert("Włącz GPS!");
+                },
+
+                // ACTIONS
+                speak(text) {
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'ja-JP';
+                    window.speechSynthesis.speak(u);
+                },
+                
+                addExpense() {
+                    if(this.newExpense.amount && this.newExpense.who) {
+                        this.expenses.push({...this.newExpense});
+                        this.newExpense = {who: '', amount: '', desc: ''};
+                        localStorage.setItem('jp_v8_expenses', JSON.stringify(this.expenses));
+                    }
+                },
+                removeExpense(i) {
+                    this.expenses.splice(i, 1);
+                    localStorage.setItem('jp_v8_expenses', JSON.stringify(this.expenses));
+                },
+                
+                togglePack(i) {
+                    this.checklist[i].done = !this.checklist[i].done;
+                    localStorage.setItem('jp_v8_pack', JSON.stringify(this.checklist));
                 },
 
                 isChecked(name) { return this.checked.includes(name); },
                 toggleCheck(name) {
-                    if (this.checked.includes(name)) this.checked = this.checked.filter(i => i !== name);
-                    else {
-                        this.checked.push(name);
-                        if (navigator.vibrate) navigator.vibrate(50);
-                    }
-                    localStorage.setItem('jp_v7_checked', JSON.stringify(this.checked));
-                },
-                
-                resetTrip() {
-                    if(confirm("Czyścimy wszystko?")) {
-                        localStorage.removeItem('jp_v7_checked');
-                        location.reload();
-                    }
+                    if(this.checked.includes(name)) this.checked = this.checked.filter(i=>i!==name);
+                    else { this.checked.push(name); if(navigator.vibrate) navigator.vibrate(50); }
+                    localStorage.setItem('jp_v8_checked', JSON.stringify(this.checked));
                 }
             }
         }
