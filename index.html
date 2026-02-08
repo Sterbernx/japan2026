@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>🇯🇵 JAPONIA V12 FULL</title>
+    <title>🇯🇵 JAPONIA V13 FINAL</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -35,20 +35,18 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #050505; color: #fff; -webkit-tap-highlight-color: transparent; }
         
-        /* Layout Mobile */
         #map-container { position: fixed; top: 0; left: 0; width: 100%; height: 35vh; z-index: 0; border-bottom: 2px solid #222; }
         #map { width: 100%; height: 100%; background: #111; }
         
         #content-scroll { 
             position: fixed; top: 35vh; left: 0; width: 100%; height: 65vh; 
             overflow-y: auto; background: #050505; z-index: 10; 
-            padding-bottom: 120px; /* footer space */
+            padding-bottom: 120px; 
         }
 
         .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Pins */
         .pin-std { background: #000; color: #00f2ff; border: 2px solid #00f2ff; border-radius: 50%; text-align: center; font-weight: bold; font-size: 14px; line-height: 24px; box-shadow: 0 0 5px #00f2ff; }
         .pin-hotel { background: #ff0055; color: #fff; border: 1px solid #fff; border-radius: 4px; font-size: 18px; text-align: center; padding: 2px; z-index: 999; }
     </style>
@@ -69,7 +67,6 @@
 
     <div id="content-scroll">
         <div class="p-2 space-y-3">
-            
             <template x-for="day in days" :key="day.id">
                 <div class="bg-cardBg rounded-xl overflow-hidden border border-gray-900 transition-all"
                      :class="activeDay === day.id ? 'border-neonBlue ring-1 ring-neonBlue/20' : ''">
@@ -83,7 +80,6 @@
                     </div>
 
                     <div x-show="activeDay === day.id" x-collapse class="bg-black/40 border-t border-gray-800">
-                        
                         <div class="p-2 bg-gray-900/50 border-b border-gray-800 text-[11px] text-gray-300 flex items-center gap-2">
                              <span>🚇 <b>Transport:</b></span>
                              <span x-text="day.transport"></span>
@@ -93,7 +89,6 @@
                             <div class="p-3 border-b border-gray-800/50 last:border-0 relative">
                                 <div class="flex gap-3 items-start">
                                     <div class="flex-none w-6 h-6 rounded-full border border-gray-600 flex items-center justify-center text-xs text-gray-400 mt-0.5" x-text="i+1"></div>
-                                    
                                     <div class="flex-1">
                                         <div class="flex justify-between">
                                             <div class="text-sm font-bold text-gray-200" :class="task.done ? 'line-through opacity-50' : ''" x-text="task.name"></div>
@@ -103,26 +98,17 @@
                                         <div class="mt-2 p-2 rounded border border-dashed transition-colors duration-300"
                                              :class="foodMode === 'cheap' ? 'bg-green-900/10 border-green-800/50' : 'bg-gold/10 border-gold/30'">
                                             <div class="flex justify-between items-center mb-1">
-                                                <span class="text-[9px] font-bold uppercase" 
-                                                      :class="foodMode === 'cheap' ? 'text-neonGreen' : 'text-gold'"
-                                                      x-text="foodMode === 'cheap' ? '🌭 BUDGET' : '💎 LUXURY'"></span>
+                                                <span class="text-[9px] font-bold uppercase" :class="foodMode === 'cheap' ? 'text-neonGreen' : 'text-gold'" x-text="foodMode === 'cheap' ? '🌭 BUDGET' : '💎 LUXURY'"></span>
                                             </div>
-                                            <div class="text-xs text-gray-400 italic">
-                                                <span x-text="foodMode === 'cheap' ? task.cheapFood : task.richFood"></span>
-                                            </div>
+                                            <div class="text-xs text-gray-400 italic"><span x-text="foodMode === 'cheap' ? task.cheapFood : task.richFood"></span></div>
                                         </div>
 
-                                        <button x-show="task.coords" @click="nav(task.coords)" class="mt-2 flex items-center gap-1 text-[10px] text-gray-500 hover:text-white">
-                                            <span>📍 NAWIGUJ</span>
-                                        </button>
+                                        <button x-show="task.coords" @click="nav(task.coords)" class="mt-2 flex items-center gap-1 text-[10px] text-gray-500 hover:text-white"><span>📍 NAWIGUJ</span></button>
                                     </div>
                                 </div>
                             </div>
                         </template>
-
-                        <div x-show="day.note" class="p-3 bg-blue-900/10 border-t border-gray-800 text-[10px] text-blue-300">
-                            ℹ️ <span x-text="day.note"></span>
-                         </div>
+                         <div x-show="day.note" class="p-3 bg-blue-900/10 border-t border-gray-800 text-[10px] text-blue-300">ℹ️ <span x-text="day.note"></span></div>
                     </div>
                 </div>
             </template>
@@ -131,16 +117,8 @@
 
     <div class="fixed bottom-0 left-0 w-full bg-black/95 backdrop-blur border-t border-gray-800 p-3 z-50">
         <div class="flex gap-3">
-            <button @click="foodMode = 'cheap'" 
-                    class="flex-1 py-3 rounded-lg border font-bold text-xs tracking-widest transition-all"
-                    :class="foodMode === 'cheap' ? 'bg-neonGreen text-black border-neonGreen shadow-[0_0_10px_#39ff14]' : 'bg-gray-900 text-gray-500 border-gray-700'">
-                🌭 TANIO
-            </button>
-            <button @click="foodMode = 'rich'" 
-                    class="flex-1 py-3 rounded-lg border font-bold text-xs tracking-widest transition-all"
-                    :class="foodMode === 'rich' ? 'bg-gold text-black border-gold shadow-[0_0_10px_#d4af37]' : 'bg-gray-900 text-gray-500 border-gray-700'">
-                💎 DROGO
-            </button>
+            <button @click="foodMode = 'cheap'" class="flex-1 py-3 rounded-lg border font-bold text-xs tracking-widest transition-all" :class="foodMode === 'cheap' ? 'bg-neonGreen text-black border-neonGreen shadow-[0_0_10px_#39ff14]' : 'bg-gray-900 text-gray-500 border-gray-700'">🌭 TANIO</button>
+            <button @click="foodMode = 'rich'" class="flex-1 py-3 rounded-lg border font-bold text-xs tracking-widest transition-all" :class="foodMode === 'rich' ? 'bg-gold text-black border-gold shadow-[0_0_10px_#d4af37]' : 'bg-gray-900 text-gray-500 border-gray-700'">💎 DROGO</button>
         </div>
     </div>
 
@@ -154,128 +132,135 @@
                 foodMode: 'cheap', 
                 
                 hotels: {
-                    tokyo1: [35.6930, 139.7924], // Galicia
+                    tokyo1: [35.6930, 139.7924], // Galicia Ryogoku
                     kyoto: [35.0080, 135.7700],  // Le Lion
-                    tokyo2: [35.6650, 139.8700]  // Tomi (Edogawa approx)
+                    tokyo2: [35.6650, 139.8700]  // Tomi
                 },
 
-                // PEŁNY PLAN Z PDF
+                // DANE Z PLIKU "Japonia_co_dzis_robimy.pdf"
                 days: [
                     { 
                         id: 'd1', date: '22.03 (Niedz)', title: 'PRZYLOT', 
                         transport: 'Keisei Skyliner -> Taxi',
-                        note: 'Dzień techniczny. Kupić SUICA, wypłacić jeniy.',
+                        note: 'Transfer do Galicia Ryogoku. Konbini i spać.',
                         tasks: [
-                            { name: 'Przylot NRT (20:00)', coords: [35.7719, 140.3906], cheapFood: 'Onigiri z 7-11', richFood: 'Room Service', done: false },
-                            { name: 'Galicia Ryogoku (Check-in)', coords: [35.6930, 139.7924], cheapFood: 'Piwo Asahi z puchy', richFood: 'Whisky Yamazaki', done: false }
+                            { name: 'Przylot NRT (20:00)', coords: [35.7719, 140.3906], cheapFood: 'Kanapka z jajkiem (7-11)', richFood: '-', done: false },
+                            { name: 'Check-in Galicia Ryogoku', coords: [35.6930, 139.7924], cheapFood: 'Onigiri', richFood: '-', done: false }
                         ]
                     },
                     { 
                         id: 'd2', date: '23.03 (Pon)', title: 'ASAKUSA & UENO', 
-                        transport: 'Ginza Line / Taxi',
-                        note: 'Zacznijcie od Senso-ji, potem Ueno.',
+                        transport: 'Spacer / Ginza Line',
+                        note: 'Zacznijcie od Senso-ji, potem spacer do parku Sumida i Ueno.',
                         tasks: [
-                            { name: 'Asahi Head Office (Złota Kupa)', coords: [35.7099, 139.8016], cheapFood: 'Fota z mostu', richFood: 'Piwo w Sky Room na górze', done: false },
-                            { name: 'Sensō-ji Temple', coords: [35.7147, 139.7966], cheapFood: 'Melonpan na Nakamise', richFood: 'Unagi (Węgorz) obok świątyni', done: false },
-                            { name: 'Daikoku-yu Onsen', coords: [35.7077, 139.8056], cheapFood: 'Mleko po kąpieli', richFood: '-', done: false },
-                            { name: 'Park Ueno', coords: [35.7140, 139.7740], cheapFood: 'Street food Ameyoko', richFood: 'Kaiseki w parku', done: false },
-                            { name: 'Yanaka Ginza', coords: [35.7275, 139.7645], cheapFood: 'Menchi Katsu (krokiet)', richFood: 'Tradycyjna herbaciarnia', done: false },
+                            { name: 'Sensō-ji (Rano)', coords: [35.7147, 139.7966], cheapFood: 'Melonpan', richFood: 'Unagi (Węgorz)', done: false },
+                            { name: 'Asahi Head Office', coords: [35.7099, 139.8016], cheapFood: '-', richFood: 'Piwo w Sky Room', done: false },
+                            { name: 'Sumida Park', coords: [35.7145, 139.8050], cheapFood: 'Kawa z automatu', richFood: '-', done: false },
+                            { name: 'Park Ueno', coords: [35.7140, 139.7740], cheapFood: 'Street food', richFood: 'Innsyoutei', done: false },
+                            { name: 'Yanaka Ginza', coords: [35.7275, 139.7645], cheapFood: 'Menchi Katsu', richFood: '-', done: false },
                             { name: 'Nezu Shrine', coords: [35.7202, 139.7607], cheapFood: '-', richFood: '-', done: false }
                         ]
                     },
                     { 
                         id: 'd3', date: '24.03 (Wt)', title: 'CENTRUM & AKIBA', 
-                        transport: 'Oedo Line -> Yamanote',
+                        transport: 'Oedo -> Hibiya -> Yamanote',
                         tasks: [
-                            { name: 'Tsukiji Hongan-ji', coords: [35.6667, 139.7717], cheapFood: '-', richFood: '-', done: false },
-                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], cheapFood: 'Jajko na patyku (150y)', richFood: 'Sushi Dai (5000y)', done: false },
-                            { name: 'Pałac Cesarski (Ogrody)', coords: [35.6851, 139.7527], cheapFood: 'Woda', richFood: '-', done: false },
-                            { name: 'Caretta Shiodome (Widok)', coords: [35.6649, 139.7626], cheapFood: 'Widok za free', richFood: 'Kolacja na 46. piętrze', done: false },
-                            { name: 'Akihabara (Sklepy)', coords: [35.7022, 139.7741], cheapFood: 'PABLO Mini Tart', richFood: 'Figurki za 20k jenów', done: false },
-                            { name: 'Maid Cafe / Capybara Cafe', coords: [35.7000, 139.7715], cheapFood: 'Omiń', richFood: 'Pakiet VIP z uszami królika', done: false }
+                            { name: 'Tsukiji Market', coords: [35.6654, 139.7706], cheapFood: 'Jajko na patyku', richFood: 'Sushi Dai (Omakase)', done: false },
+                            { name: 'Pałac Cesarski & Ogrody', coords: [35.6851, 139.7527], cheapFood: '-', richFood: '-', done: false },
+                            { name: 'Marunouchi / KITTE Garden', coords: [35.6795, 139.7640], cheapFood: 'Bento', richFood: 'Restauracja z widokiem na dworzec', done: false },
+                            { name: 'Caretta Shiodome', coords: [35.6649, 139.7626], cheapFood: '-', richFood: '-', done: false },
+                            { name: 'Akihabara', coords: [35.7022, 139.7741], cheapFood: 'Curry', richFood: 'Maid Cafe (drogie drinki)', done: false }
                         ]
                     },
                     { 
-                        id: 'd4', date: '25.03 (Śr)', title: 'WEST TOKYO HARDCORE', 
-                        transport: 'Odakyu / Inokashira / Yamanote',
-                        note: 'Intensywny dzień. Dużo łażenia.',
+                        id: 'd4', date: '25.03 (Śr)', title: 'SHIBUYA & SHINJUKU', 
+                        transport: 'Odakyu / Inokashira',
+                        note: 'Nocne życie w Shinjuku na koniec.',
                         tasks: [
-                            { name: 'Gotokuji (Koty)', coords: [35.6482, 139.6483], cheapFood: '-', richFood: '-', done: false },
-                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], cheapFood: 'Curry Pan', richFood: 'Hipsterska Kawa', done: false },
-                            { name: 'Shibuya Crossing & Hachiko', coords: [35.6595, 139.7004], cheapFood: 'Genki Sushi', richFood: 'L\'Occitane Cafe (widok)', done: false },
-                            { name: 'Shibuya Sky', coords: [35.6585, 139.7018], cheapFood: '-', richFood: 'Drink w The Roof', done: false },
-                            { name: 'Harajuku (Takeshita/Meiji)', coords: [35.6710, 139.7030], cheapFood: 'Naleśnik', richFood: '-', done: false },
-                            { name: 'Shinjuku: Cross Vision (Kot 3D)', coords: [35.6925, 139.7010], cheapFood: '-', richFood: '-', done: false },
-                            { name: 'Kabukicho & Golden Gai', coords: [35.6938, 139.7035], cheapFood: 'Ramen w Omoide Yokocho', richFood: 'Bar Albatross (drinki)', done: false }
+                            { name: 'Gotokuji Temple', coords: [35.6482, 139.6483], cheapFood: '-', richFood: '-', done: false },
+                            { name: 'Shimokitazawa', coords: [35.6607, 139.6673], cheapFood: 'Curry Pan', richFood: 'Drip Coffee', done: false },
+                            { name: 'Shibuya Crossing & Hachiko', coords: [35.6595, 139.7004], cheapFood: 'Genki Sushi', richFood: 'L\'Occitane Cafe', done: false },
+                            { name: 'Shibuya Sky (Rezerwacja)', coords: [35.6585, 139.7018], cheapFood: '-', richFood: 'The Roof Bar', done: false },
+                            { name: 'Center Gai', coords: [35.6604, 139.6990], cheapFood: 'Ramen', richFood: '-', done: false },
+                            { name: 'Shinjuku (Golden Gai/Kabukicho)', coords: [35.6938, 139.7035], cheapFood: 'Omoide Yokocho', richFood: 'Bar Albatross', done: false }
                         ]
                     },
                     { 
-                        id: 'd5', date: '26.03 (Czw)', title: 'CHILL DAY', 
-                        transport: 'Hibiya Line / Fukutoshin',
+                        id: 'd5', date: '26.03 (Czw)', title: 'HARAJUKU & DAIKANYAMA', 
+                        transport: 'Yamanote -> Spacer',
+                        note: 'Nowa trasa! Zamiast Ikebukuro macie super spacer.',
                         tasks: [
-                            { name: 'Nakameguro (Hanami)', coords: [35.6443, 139.6990], cheapFood: 'Kawa z konbini', richFood: 'Szampan nad rzeką', done: false },
-                            { name: 'Ikebukuro', coords: [35.7295, 139.7109], cheapFood: 'Gyoza', richFood: 'Pokemon Center (zakupy)', done: false }
+                            { name: 'Meiji Shrine', coords: [35.6764, 139.6993], cheapFood: '-', richFood: '-', done: false },
+                            { name: 'Takeshita Street', coords: [35.6710, 139.7030], cheapFood: 'Naleśnik (Crepe)', richFood: '-', done: false },
+                            { name: 'Cat Street', coords: [35.6675, 139.7060], cheapFood: 'Takoyaki', richFood: 'Luke\'s Lobster', done: false },
+                            { name: 'Daikanyama (TSUTAYA)', coords: [35.6490, 139.6995], cheapFood: 'Kawa w konbini', richFood: 'IVY PLACE (Pancakes)', done: false },
+                            { name: 'Nakameguro (Hanami)', coords: [35.6443, 139.6990], cheapFood: 'Piwo z puszki', richFood: 'Szampan nad rzeką', done: false }
                         ]
                     },
                     { 
-                        id: 'd6', date: '27.03 (Pt)', title: 'WYCIECZKA', 
-                        transport: 'JR Yokosuka / Enoden',
+                        id: 'd6', date: '27.03 (Pt)', title: 'KAMAKURA & ENOSHIMA', 
+                        transport: 'JR Yokosuka',
+                        note: 'Doszła Hasedera i Hachimangu. Pełny dzień.',
                         tasks: [
-                            { name: 'Kamakura (Budda)', coords: [35.3168, 139.5361], cheapFood: 'Lody fioletowe', richFood: 'Obiad z widokiem', done: false },
-                            { name: 'Enoshima', coords: [35.3016, 139.4814], cheapFood: 'Tako Senbei', richFood: 'Shirasu-don', done: false },
-                            { name: 'Yokohama', coords: [35.4439, 139.6462], cheapFood: 'Pierożki Chinatown', richFood: 'Landmark Tower', done: false }
+                            { name: 'Wielki Budda (Kotoku-in)', coords: [35.3168, 139.5361], cheapFood: 'Lody', richFood: '-', done: false },
+                            { name: 'Hasedera Temple', coords: [35.3125, 139.5328], cheapFood: 'Dango', richFood: 'Kaikoan (Restauracja)', done: false },
+                            { name: 'Tsurugaoka Hachimangu', coords: [35.3260, 139.5564], cheapFood: 'Ulica Komachi-dori', richFood: '-', done: false },
+                            { name: 'Enoshima Island', coords: [35.3016, 139.4814], cheapFood: 'Tako Senbei', richFood: 'Shirasu-don', done: false }
                         ]
                     },
                     { 
-                        id: 'd7', date: '28.03 (Sob)', title: 'MOVE TO KYOTO', 
+                        id: 'd7', date: '28.03 (Sob)', title: 'KIOTO START', 
                         transport: 'Shinkansen -> Taxi',
-                        note: 'Check-out z Galicia, Check-in Le Lion d\'or',
+                        note: 'Przejazd do Kioto i od razu Gion.',
                         tasks: [
-                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], cheapFood: 'Ciastko', richFood: 'Tofu Ryori', done: false },
-                            { name: 'Sannenzaka & Ninenzaka', coords: [34.9972, 135.7824], cheapFood: '-', richFood: 'Kawa w Starbucks (Tatami)', done: false },
-                            { name: 'Gion & Shirakawa', coords: [35.0054, 135.7745], cheapFood: 'Ramen', richFood: 'Kaiseki z Gejszą', done: false }
+                            { name: 'Kiyomizu-dera', coords: [34.9948, 135.7850], cheapFood: 'Ciastko', richFood: 'Okutan Tofu', done: false },
+                            { name: 'Sannenzaka & Ninenzaka', coords: [34.9972, 135.7824], cheapFood: '-', richFood: 'Starbucks Tatami', done: false },
+                            { name: 'Yasaka Shrine', coords: [35.0036, 135.7785], cheapFood: 'Street food', richFood: '-', done: false },
+                            { name: 'Gion & Shirakawa', coords: [35.0054, 135.7745], cheapFood: 'Ramen', richFood: 'Kaiseki', done: false }
                         ]
                     },
                     { 
-                        id: 'd8', date: '29.03 (Niedz)', title: 'FUSHIMI INARI', 
-                        transport: 'Keihan Line / JR Nara Line',
-                        note: 'Bardzo rano!',
+                        id: 'd8', date: '29.03 (Niedz)', title: 'FUSHIMI & NISHIKI', 
+                        transport: 'Keihan',
                         tasks: [
-                            { name: 'Fushimi Inari Taisha', coords: [34.9671, 135.7726], cheapFood: 'Kitsune Udon', richFood: 'Herbata na szczycie', done: false },
-                            { name: 'Spacer Wieczorny', coords: [35.0037, 135.7710], cheapFood: 'Pontocho (bary)', richFood: 'Kamo River Dining', done: false }
+                            { name: 'Fushimi Inari (Rano!)', coords: [34.9671, 135.7726], cheapFood: 'Inari Sushi', richFood: 'Vermillion Cafe', done: false },
+                            { name: 'Nishiki Market (Opcja)', coords: [35.0050, 135.7631], cheapFood: 'Wszystko na patyku', richFood: '-', done: false }
                         ]
                     },
                     { 
-                        id: 'd9', date: '30.03 (Pon)', title: 'GINKAKU-JI', 
-                        transport: 'Bus 17 / Taxi',
+                        id: 'd9', date: '30.03 (Pon)', title: 'FILOZOFICZNE KIOTO', 
+                        transport: 'Bus / Taxi',
                         tasks: [
-                            { name: 'Ginkaku-ji', coords: [35.0268, 135.7982], cheapFood: 'Lody Matcha', richFood: '-', done: false },
-                            { name: 'Philosopher\'s Path', coords: [35.0230, 135.7950], cheapFood: 'Spacer', richFood: 'Cafe Terrazza', done: false },
+                            { name: 'Ginkaku-ji', coords: [35.0268, 135.7982], cheapFood: 'Matcha', richFood: '-', done: false },
+                            { name: 'Philosopher\'s Path', coords: [35.0230, 135.7950], cheapFood: '-', richFood: 'Cafe Terrazza', done: false },
+                            { name: 'Nanzen-ji', coords: [35.0112, 135.7938], cheapFood: '-', richFood: 'Yudofu (Tofu)', done: false },
                             { name: 'Sanjūsangen-dō', coords: [34.9878, 135.7717], cheapFood: '-', richFood: '-', done: false }
                         ]
                     },
                     { 
                         id: 'd10', date: '31.03 (Wt)', title: 'NARA', 
-                        transport: 'Kintetsu Line',
+                        transport: 'Kintetsu',
                         tasks: [
-                            { name: 'Nara Park (Jelonki)', coords: [34.6850, 135.8430], cheapFood: 'Krakersy dla jeleni', richFood: 'Kakinoha Sushi', done: false },
-                            { name: 'Tōdai-ji', coords: [34.6889, 135.8398], cheapFood: '-', richFood: '-', done: false }
+                            { name: 'Nara Park & Jelonki', coords: [34.6850, 135.8430], cheapFood: 'Krakersy (dla jeleni)', richFood: 'Kakinoha Sushi', done: false },
+                            { name: 'Tōdai-ji', coords: [34.6889, 135.8398], cheapFood: '-', richFood: '-', done: false },
+                            { name: 'Kasuga Taisha', coords: [34.6812, 135.8484], cheapFood: '-', richFood: '-', done: false }
+                        ]
+                    },
+                     { 
+                        id: 'd11', date: '01.04 (Śr)', title: 'POWRÓT DO TOKIO', 
+                        transport: 'Shinkansen',
+                        tasks: [
+                            { name: 'Powrót do Tokio', coords: [35.6812, 139.7671], cheapFood: 'Ekiben (Bento)', richFood: 'Green Car', done: false },
+                            { name: 'Check-in TOMI Hotel', coords: [35.6650, 139.8700], cheapFood: '-', richFood: '-', done: false }
                         ]
                     },
                     { 
-                        id: 'd11', date: '01.04 (Śr)', title: 'POWRÓT TOKIO', 
-                        transport: 'Shinkansen -> Taxi',
-                        note: 'Check-in TOMI Hotel.',
+                        id: 'd12', date: '02.04 - 06.04', title: 'TOKIO KOŃCÓWKA', 
+                        transport: 'Elastycznie',
                         tasks: [
-                            { name: 'Powrót do Tokio', coords: [35.6812, 139.7671], cheapFood: 'Bento dworcowe', richFood: 'Green Car Shinkansen', done: false }
-                        ]
-                    },
-                    { 
-                        id: 'd12', date: '02.04 - 06.04', title: 'FREE TIME', 
-                        transport: 'Wszędzie',
-                        tasks: [
-                            { name: 'Zakupy / Don Quijote', coords: null, cheapFood: 'KitKaty', richFood: 'Sake', done: false },
-                            { name: 'Wylot (06.04)', coords: [35.7719, 140.3906], cheapFood: '-', richFood: 'Business Class', done: false }
+                            { name: 'TeamLab / Odaiba', coords: [35.6154, 139.7956], cheapFood: 'Ramen w Aqua City', richFood: 'Hilton Odaiba', done: false },
+                            { name: 'Shibuya / Akiba Zakupy', coords: null, cheapFood: 'Don Quijote', richFood: 'Parco Shibuya', done: false },
+                            { name: 'Wylot (06.04)', coords: [35.7719, 140.3906], cheapFood: '-', richFood: '-', done: false }
                         ]
                     }
                 ],
@@ -287,7 +272,7 @@
                     }).addTo(this.map);
                     this.layerGroup = L.layerGroup().addTo(this.map);
                     
-                    const saved = localStorage.getItem('jp_v12_full');
+                    const saved = localStorage.getItem('jp_v13_final');
                     if(saved) {
                         const parsed = JSON.parse(saved);
                         this.days.forEach((d, di) => {
@@ -309,7 +294,6 @@
                     this.layerGroup.clearLayers();
                     const bounds = [];
                     
-                    // Hotel
                     let hotelCoords = this.hotels.tokyo1;
                     if(['d7','d8','d9','d10'].includes(day.id)) hotelCoords = this.hotels.kyoto;
                     if(['d11','d12'].includes(day.id)) hotelCoords = this.hotels.tokyo2;
@@ -317,7 +301,6 @@
                     L.marker(hotelCoords, {icon: L.divIcon({html: '🏨', className: 'pin-hotel'})}).addTo(this.layerGroup);
                     bounds.push(hotelCoords);
 
-                    // Tasks
                     day.tasks.forEach((t, i) => {
                         if(t.coords) {
                             L.marker(t.coords, {
@@ -337,7 +320,7 @@
                 },
 
                 save() {
-                    localStorage.setItem('jp_v12_full', JSON.stringify(this.days));
+                    localStorage.setItem('jp_v13_final', JSON.stringify(this.days));
                 }
             }
         }
