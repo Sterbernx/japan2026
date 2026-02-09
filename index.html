@@ -4,17 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>JAPONIA V14 HUD</title>
+    <title>JAPONIA V15 NAVIGATOR</title>
 
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <script>
@@ -27,7 +20,7 @@
                         cyber: '#00f3ff',
                         vip: '#ffd700',
                         void: '#050505',
-                        danger: '#ff2a6d'
+                        panel: '#111'
                     }
                 }
             }
@@ -36,334 +29,472 @@
     
     <style>
         body { background: #000; color: #fff; overflow: hidden; }
-        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(120%) grayscale(10%); }
-        .glass-panel { background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(12px); border-top: 1px solid rgba(0, 243, 255, 0.2); }
         
-        /* Pins */
-        .pin-user { width: 20px; height: 20px; background: #00f3ff; border-radius: 50%; box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.7); animation: pulse-cyan 1.5s infinite; border: 2px solid #fff; }
-        .pin-target { width: 24px; height: 24px; background: #ff2a6d; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 15px #ff2a6d; display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; }
-        .pin-hotel { font-size: 24px; filter: drop-shadow(0 0 10px #ff0055); }
-        
-        @keyframes pulse-cyan {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(0, 243, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 243, 255, 0); }
+        /* MAPA FIX */
+        #map-container { position: fixed; top: 0; left: 0; width: 100%; height: 45vh; z-index: 0; border-bottom: 2px solid #00f3ff; }
+        #map { width: 100%; height: 100%; background: #0b0b0b; }
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(120%) grayscale(20%); }
+        .leaflet-popup-content-wrapper { background: rgba(0,0,0,0.9); border: 1px solid #00f3ff; color: #fff; border-radius: 0; }
+        .leaflet-popup-tip { background: #00f3ff; }
+
+        /* LISTA SCROLL */
+        #content-scroll { 
+            position: fixed; top: 45vh; left: 0; width: 100%; height: 55vh; 
+            overflow-y: auto; background: #050505; z-index: 10; 
+            padding-bottom: 80px;
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* PINS */
+        .pin-std { 
+            background: #000; color: #00f3ff; border: 2px solid #00f3ff; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 14px; box-shadow: 0 0 10px #00f3ff;
+        }
+        .pin-hotel { font-size: 24px; filter: drop-shadow(0 0 5px #ff0055); text-align: center; }
     </style>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
-<body>
-    <div id="root"></div>
+<body x-data="app()" x-init="init()" class="h-screen w-screen bg-void text-white">
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const { motion, AnimatePresence } = window.Motion;
+    <div id="map-container">
+        <div id="map"></div>
+        <div class="absolute top-3 left-3 z-[500] bg-black/80 backdrop-blur px-3 py-2 border-l-4 border-cyber">
+            <div class="text-[10px] text-gray-400 font-hud tracking-widest uppercase">AKTUALNY CEL</div>
+            <div class="text-sm font-bold text-cyber font-hud text-lg leading-none" x-text="currentDayTitle"></div>
+        </div>
+        <button @click="locateMe()" class="absolute bottom-3 right-3 z-[500] bg-black/80 p-3 rounded-full border border-cyber text-cyber shadow-[0_0_15px_#00f3ff]">
+            📍
+        </button>
+    </div>
 
-        // --- DANE (Zaktualizowane) ---
-        const TRIP_DATA = [
-            { id: 'd1', date: '22.03', title: 'PRZYLOT', hotel: [35.6930, 139.7924], trans: 'Skyliner', tasks: [
-                { t: 'Przylot NRT (20:00)', c: [35.7719, 140.3906] },
-                { t: 'Check-in Galicia Ryogoku', c: [35.6930, 139.7924] }
-            ]},
-            { id: 'd2', date: '23.03', title: 'ASAKUSA', hotel: [35.6930, 139.7924], trans: 'Ginza Line', tasks: [
-                { t: 'Sensō-ji Temple', c: [35.7147, 139.7966] },
-                { t: 'Park Ueno', c: [35.7140, 139.7740] },
-                { t: 'Yanaka Ginza', c: [35.7275, 139.7645] },
-                { t: 'Daikoku-yu Onsen', c: [35.7077, 139.8056] }
-            ]},
-            { id: 'd3', date: '24.03', title: 'CENTRUM', hotel: [35.6930, 139.7924], trans: 'Oedo', tasks: [
-                { t: 'Tsukiji Market', c: [35.6654, 139.7706] },
-                { t: 'Pałac Cesarski', c: [35.6851, 139.7527] },
-                { t: 'Akihabara', c: [35.7022, 139.7741] }
-            ]},
-            { id: 'd4', date: '25.03', title: 'SHIBUYA', hotel: [35.6930, 139.7924], trans: 'Odakyu', tasks: [
-                { t: 'Gotokuji (Koty)', c: [35.6482, 139.6483] },
-                { t: 'Shimokitazawa', c: [35.6607, 139.6673] },
-                { t: 'Shibuya Crossing', c: [35.6595, 139.7004] },
-                { t: 'Kabukicho', c: [35.6938, 139.7035] }
-            ]},
-            { id: 'd5', date: '26.03', title: 'FASHION', hotel: [35.6930, 139.7924], trans: 'Yamanote', tasks: [
-                { t: 'Meiji Shrine', c: [35.6764, 139.6993] },
-                { t: 'Daikanyama', c: [35.6490, 139.6995] },
-                { t: 'Nakameguro', c: [35.6443, 139.6990] }
-            ]},
-            { id: 'd6', date: '27.03', title: 'KAMAKURA', hotel: [35.6930, 139.7924], trans: 'JR', tasks: [
-                { t: 'Wielki Budda', c: [35.3168, 139.5361] },
-                { t: 'Hasedera', c: [35.3125, 139.5328] },
-                { t: 'Enoshima', c: [35.3016, 139.4814] }
-            ]},
-            { id: 'd7', date: '28.03', title: 'KIOTO GION', hotel: [35.0080, 135.7700], trans: 'Shinkansen', tasks: [
-                { t: 'Kiyomizu-dera', c: [34.9948, 135.7850] },
-                { t: 'Gion', c: [35.0054, 135.7745] }
-            ]},
-            { id: 'd8', date: '29.03', title: 'FUSHIMI', hotel: [35.0080, 135.7700], trans: 'Keihan', tasks: [
-                { t: 'Fushimi Inari', c: [34.9671, 135.7726] },
-                { t: 'Nishiki Market', c: [35.0050, 135.7631] }
-            ]},
-            { id: 'd9', date: '30.03', title: 'ZEN', hotel: [35.0080, 135.7700], trans: 'Bus', tasks: [
-                { t: 'Ginkaku-ji', c: [35.0268, 135.7982] },
-                { t: 'Philosopher\'s Path', c: [35.0230, 135.7950] }
-            ]},
-            { id: 'd10', date: '31.03', title: 'NARA', hotel: [35.0080, 135.7700], trans: 'Kintetsu', tasks: [
-                { t: 'Nara Park', c: [34.6850, 135.8430] },
-                { t: 'Todai-ji', c: [34.6889, 135.8398] }
-            ]},
-            { id: 'd11', date: '01.04', title: 'POWRÓT', hotel: [35.6650, 139.8700], trans: 'Shinkansen', tasks: [
-                { t: 'Check-in TOMI', c: [35.6650, 139.8700] }
-            ]},
-            { id: 'd12', date: '02-06.04', title: 'FREE TIME', hotel: [35.6650, 139.8700], trans: 'Metro', tasks: [
-                { t: 'TeamLab', c: [35.6154, 139.7956] },
-                { t: 'Wylot NRT', c: [35.7719, 140.3906] }
-            ]}
-        ];
-
-        // --- HELPER: Haversine Distance ---
-        const calcDist = (lat1, lon1, lat2, lon2) => {
-            const R = 6371e3; // metres
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return Math.round(R * c);
-        }
-
-        // --- COMPONENT: HUD Map ---
-        const HudMap = ({ activeDay, userLoc, targetLoc }) => {
-            const mapRef = useRef(null);
-            const layersRef = useRef({ user: null, target: null, line: null, hotel: null });
-
-            useEffect(() => {
-                if (!mapRef.current) {
-                    mapRef.current = L.map('map-container', { zoomControl: false }).setView([35.693, 139.792], 13);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapRef.current);
-                }
-            }, []);
-
-            // Handle Target & Day Change
-            useEffect(() => {
-                if (!mapRef.current) return;
-                const map = mapRef.current;
-                
-                // Clear old static layers
-                if (layersRef.current.hotel) map.removeLayer(layersRef.current.hotel);
-                if (layersRef.current.target) map.removeLayer(layersRef.current.target);
-
-                const day = TRIP_DATA.find(d => d.id === activeDay);
-                
-                // Add Hotel
-                const hotelIcon = L.divIcon({ html: '🏨', className: 'pin-hotel' });
-                layersRef.current.hotel = L.marker(day.hotel, { icon: hotelIcon }).addTo(map);
-
-                // Add Target (if active)
-                if (targetLoc) {
-                    const targetIcon = L.divIcon({ html: '🎯', className: 'pin-target' });
-                    layersRef.current.target = L.marker(targetLoc, { icon: targetIcon }).addTo(map);
+    <div id="content-scroll">
+        <div class="p-2 space-y-4">
+            
+            <template x-for="day in days" :key="day.id">
+                <div class="bg-panel border border-gray-800 transition-all duration-300"
+                     :class="activeDay === day.id ? 'border-cyber shadow-[0_0_10px_rgba(0,243,255,0.2)]' : 'opacity-70'">
                     
-                    // Fly to fit both user (if exists) and target
-                    const bounds = userLoc ? L.latLngBounds([userLoc, targetLoc]) : L.latLngBounds([day.hotel, targetLoc]);
-                    map.flyToBounds(bounds, { padding: [50, 50] });
-                } else {
-                    map.flyTo(day.hotel, 13);
-                }
-
-            }, [activeDay, targetLoc]);
-
-            // Handle User Location Live Update
-            useEffect(() => {
-                if (!mapRef.current || !userLoc) return;
-                const map = mapRef.current;
-
-                if (layersRef.current.user) {
-                    layersRef.current.user.setLatLng(userLoc);
-                } else {
-                    const userIcon = L.divIcon({ className: 'pin-user' });
-                    layersRef.current.user = L.marker(userLoc, { icon: userIcon }).addTo(map);
-                }
-
-                // Draw Line
-                if (layersRef.current.line) map.removeLayer(layersRef.current.line);
-                if (targetLoc) {
-                    layersRef.current.line = L.polyline([userLoc, targetLoc], { color: '#00f3ff', weight: 2, dashArray: '5, 10', opacity: 0.6 }).addTo(map);
-                }
-
-            }, [userLoc, targetLoc]);
-
-            return <div id="map-container" className="fixed top-0 left-0 w-full h-[40vh] z-0 border-b border-cyber/30" />;
-        };
-
-        // --- COMPONENT: Expense Splitter ---
-        const Splitter = ({ onClose }) => {
-            const [expenses, setExpenses] = useState(() => JSON.parse(localStorage.getItem('jp_exp')) || []);
-            const [form, setForm] = useState({ who: '', amt: '', what: '' });
-
-            const add = () => {
-                if(!form.who || !form.amt) return;
-                const newExp = [...expenses, { ...form, id: Date.now() }];
-                setExpenses(newExp);
-                localStorage.setItem('jp_exp', JSON.stringify(newExp));
-                setForm({ who: '', amt: '', what: '' });
-            };
-
-            const del = (id) => {
-                const newExp = expenses.filter(e => e.id !== id);
-                setExpenses(newExp);
-                localStorage.setItem('jp_exp', JSON.stringify(newExp));
-            };
-
-            return (
-                <div className="fixed inset-0 z-50 bg-black/95 p-6 overflow-y-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-hud text-cyber uppercase tracking-widest">💰 Splitter</h2>
-                        <button onClick={onClose} className="text-gray-400 text-xl">✕</button>
-                    </div>
-                    
-                    <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 mb-6">
-                        <div className="grid grid-cols-2 gap-2 mb-2">
-                            <input value={form.who} onChange={e=>setForm({...form, who:e.target.value})} placeholder="Kto?" className="bg-black border border-gray-600 p-2 rounded text-white" />
-                            <input type="number" value={form.amt} onChange={e=>setForm({...form, amt:e.target.value})} placeholder="Ile JPY?" className="bg-black border border-gray-600 p-2 rounded text-white" />
+                    <div @click="setDay(day)" class="p-4 flex justify-between items-center cursor-pointer bg-gradient-to-r from-panel to-black">
+                        <div>
+                            <div class="font-hud text-2xl font-bold" x-text="day.date"></div>
+                            <div class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]" x-text="day.title"></div>
                         </div>
-                        <input value={form.what} onChange={e=>setForm({...form, what:e.target.value})} placeholder="Za co?" className="w-full bg-black border border-gray-600 p-2 rounded text-white mb-3" />
-                        <button onClick={add} className="w-full bg-cyber text-black font-bold py-3 rounded uppercase tracking-widest">Dodaj</button>
+                        <div class="text-cyber text-xl transition-transform" :class="activeDay === day.id ? 'rotate-90' : ''">➤</div>
                     </div>
 
-                    <div className="space-y-2">
-                        {expenses.map(e => (
-                            <div key={e.id} className="flex justify-between p-3 bg-gray-900 rounded border border-gray-800">
-                                <div><span className="font-bold text-cyber">{e.who}</span>: {e.amt} JPY <span className="text-xs text-gray-500">({e.what})</span></div>
-                                <button onClick={()=>del(e.id)} className="text-danger">🗑</button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const App = () => {
-            const [activeDay, setActiveDay] = useState('d1');
-            const [checked, setChecked] = useState(() => JSON.parse(localStorage.getItem('jp_v14_chk')) || {});
-            const [targetLoc, setTargetLoc] = useState(null);
-            const [userLoc, setUserLoc] = useState(null);
-            const [dist, setDist] = useState(null);
-            const [showSplitter, setShowSplitter] = useState(false);
-            const [gpsError, setGpsError] = useState(false);
-
-            // GPS Tracker
-            useEffect(() => {
-                if ("geolocation" in navigator) {
-                    const id = navigator.geolocation.watchPosition(
-                        (pos) => {
-                            const newLoc = [pos.coords.latitude, pos.coords.longitude];
-                            setUserLoc(newLoc);
-                            if (targetLoc) {
-                                setDist(calcDist(newLoc[0], newLoc[1], targetLoc[0], targetLoc[1]));
-                            }
-                        },
-                        (err) => { console.error(err); setGpsError(true); },
-                        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-                    );
-                    return () => navigator.geolocation.clearWatch(id);
-                }
-            }, [targetLoc]);
-
-            const handleSetTarget = (coords) => {
-                setTargetLoc(coords);
-                if (userLoc) setDist(calcDist(userLoc[0], userLoc[1], coords[0], coords[1]));
-            };
-
-            const toggleCheck = (dayId, idx) => {
-                const k = `${dayId}-${idx}`;
-                const n = { ...checked, [k]: !checked[k] };
-                setChecked(n);
-                localStorage.setItem('jp_v14_chk', JSON.stringify(n));
-            };
-
-            const currentDayData = TRIP_DATA.find(d => d.id === activeDay);
-
-            return (
-                <div className="h-screen w-screen bg-void text-white font-sans overflow-hidden relative">
-                    
-                    {/* TOP HUD */}
-                    <HudMap activeDay={activeDay} userLoc={userLoc} targetLoc={targetLoc} />
-                    
-                    {/* GPS STATUS OVERLAY */}
-                    <div className="fixed top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${userLoc ? 'bg-cyber animate-pulse' : 'bg-red-500'}`}></div>
-                            <span className="text-[10px] font-hud tracking-widest text-cyber">{userLoc ? 'GPS ONLINE' : 'GPS SEARCHING...'}</span>
+                    <div x-show="activeDay === day.id" class="border-t border-gray-800 bg-black/30">
+                        
+                        <div class="p-3 bg-cyber/5 text-[11px] text-cyber border-b border-gray-800 font-mono">
+                            🏨 START: <span x-text="hotels[day.hotelKey].name"></span>
                         </div>
-                        {dist !== null && (
-                            <div className="bg-black/80 backdrop-blur border border-cyber px-4 py-2 rounded-br-xl">
-                                <div className="text-[10px] text-gray-400 font-hud uppercase">DYSTANS DO CELU</div>
-                                <div className={`text-2xl font-hud font-bold ${dist < 50 ? 'text-neonGreen' : 'text-white'}`}>
-                                    {dist} <span className="text-sm">m</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* MUSIC BUTTON */}
-                    <a href="https://www.youtube.com/watch?v=9Fyyem3dGr0" target="_blank" className="fixed top-4 right-4 z-20 bg-black/80 p-3 rounded-full border border-gray-600 text-xl active:scale-90 transition">
-                        🎵
-                    </a>
-
-                    {/* SPLITTER BUTTON */}
-                    <button onClick={()=>setShowSplitter(true)} className="fixed top-20 right-4 z-20 bg-gray-900/80 p-3 rounded-full border border-gray-600 text-xl active:scale-90 transition">
-                        💸
-                    </button>
-
-                    {/* MAIN SCROLL LIST */}
-                    <div className="fixed top-[40vh] left-0 w-full h-[60vh] overflow-y-auto pb-24 bg-void border-t border-gray-800 z-10 shadow-[0_-10px_30px_rgba(0,0,0,1)]">
-                        <div className="p-4 space-y-4">
-                            {TRIP_DATA.map(day => (
-                                <div key={day.id} className={`bg-[#0a0a0a] border ${activeDay === day.id ? 'border-cyber/50' : 'border-gray-900'} rounded-xl overflow-hidden transition-all duration-300`}>
-                                    <div onClick={() => setActiveDay(day.id)} className="p-4 flex justify-between items-center bg-gradient-to-r from-gray-900 to-black cursor-pointer">
-                                        <div>
-                                            <div className="font-hud text-xl font-bold">{day.date}</div>
-                                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{day.title}</div>
+                        <template x-for="(task, i) in day.tasks" :key="i">
+                            <div class="border-b border-gray-800 last:border-0 transition-colors hover:bg-white/5">
+                                
+                                <div @click="toggleTask(day.id, i)" class="p-4 cursor-pointer">
+                                    <div class="flex gap-4 items-center">
+                                        <div class="flex-none w-8 h-8 rounded-full border-2 border-gray-700 flex items-center justify-center font-bold text-sm text-gray-500 transition-all"
+                                             :class="task.expanded ? 'bg-cyber text-black border-cyber' : ''">
+                                            <span x-text="i+1"></span>
                                         </div>
-                                        {activeDay === day.id && <div className="text-cyber text-xs animate-pulse">ACTIVE</div>}
+                                        <div class="flex-1">
+                                            <div class="font-bold text-sm text-gray-200" x-text="task.name"></div>
+                                            <div class="text-[10px] text-gray-500 mt-1 flex gap-2">
+                                                <span x-show="!task.expanded">▼ Kliknij po szczegóły</span>
+                                                <span x-show="task.expanded" class="text-cyber">▲ Zwiń</span>
+                                            </div>
+                                        </div>
+                                        <input type="checkbox" @click.stop class="accent-cyber w-6 h-6 rounded cursor-pointer opacity-50 checked:opacity-100">
                                     </div>
-                                    
-                                    {activeDay === day.id && (
-                                        <div className="border-t border-gray-800 p-2">
-                                            <div className="text-[10px] text-gray-500 mb-2 px-2">🚇 {day.trans}</div>
-                                            {day.tasks.map((task, i) => (
-                                                <div key={i} className="flex gap-3 p-3 items-start border-b border-gray-800/50 last:border-0 relative">
-                                                    <div className="flex-none w-6 h-6 rounded border border-gray-700 flex items-center justify-center text-xs text-gray-500">{i+1}</div>
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between">
-                                                            <div className={`text-sm font-bold ${checked[`${day.id}-${i}`] ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.t}</div>
-                                                            <input type="checkbox" checked={!!checked[`${day.id}-${i}`]} onChange={() => toggleCheck(day.id, i)} className="accent-cyber w-5 h-5 rounded opacity-50 checked:opacity-100" />
-                                                        </div>
-                                                        {task.c && (
-                                                            <div className="flex gap-2 mt-3">
-                                                                <button onClick={() => handleSetTarget(task.c)} className={`flex-1 py-2 text-[10px] font-bold border rounded uppercase transition ${targetLoc === task.c ? 'bg-cyber/20 border-cyber text-cyber' : 'bg-gray-800 border-gray-700 text-gray-400'}`}>
-                                                                    {targetLoc === task.c ? '◉ NAMIERZANIE' : '◎ ŚLEDŹ GPS'}
-                                                                </button>
-                                                                <button onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${task.c[0]},${task.c[1]}&travelmode=walking`, '_blank')} className="px-4 py-2 text-[10px] font-bold bg-gray-800 border border-gray-700 rounded text-gray-300">
-                                                                    MAPY ↗
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
-                            ))}
-                        </div>
+
+                                <div x-show="task.expanded" class="bg-gray-900/80 px-4 pb-4 border-l-4 border-cyber ml-4 mb-2">
+                                    
+                                    <div class="mb-3 pt-2">
+                                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">CO TO JEST?</div>
+                                        <div class="text-sm text-gray-200 leading-snug" x-text="task.desc"></div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">JAK DOJCHAĆ?</div>
+                                        <div class="text-sm text-neonGreen font-mono bg-black/50 p-2 rounded border border-gray-700">
+                                            🚇 <span x-text="task.transport"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button x-show="task.coords" @click.stop="nav(task.coords)" class="flex-1 bg-cyber text-black font-bold text-xs py-2 rounded hover:bg-white transition">
+                                            📍 NAWIGUJ
+                                        </button>
+                                        <button x-show="task.food" @click.stop="alert('Polecajka: ' + task.food)" class="px-4 border border-gold text-gold font-bold text-xs py-2 rounded hover:bg-gold hover:text-black transition">
+                                            🍔 GASTRO
+                                        </button>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </template>
                     </div>
-
-                    {showSplitter && <Splitter onClose={()=>setShowSplitter(false)} />}
                 </div>
-            );
-        };
+            </template>
+            <div class="h-20"></div>
+        </div>
+    </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+    <script>
+        function app() {
+            return {
+                map: null,
+                layerGroup: null,
+                routeLine: null,
+                activeDay: 'd1',
+                currentDayTitle: 'Przylot',
+                
+                hotels: {
+                    tokyo1: { name: 'Galicia Ryogoku', coords: [35.6930, 139.7924] },
+                    kyoto: { name: 'Le Lion d\'or', coords: [35.0080, 135.7700] },
+                    tokyo2: { name: 'TOMI Hotel', coords: [35.6650, 139.8700] }
+                },
+
+                days: [
+                    { 
+                        id: 'd1', date: '22.03', title: 'PRZYLOT', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Lądowanie NRT (20:00)', 
+                                coords: [35.7719, 140.3906], 
+                                desc: 'Lotnisko Narita. Tu zaczynacie przygodę.',
+                                transport: 'Pociąg Keisei Skyliner do Nippori/Ueno, potem Taxi do Ryogoku.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Check-in: Galicia Ryogoku', 
+                                coords: [35.6930, 139.7924], 
+                                desc: 'Wasza baza wypadowa. Blisko areny Sumo.',
+                                transport: 'Spacer z taksówki.',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd2', date: '23.03', title: 'ASAKUSA & UENO', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Sensō-ji Temple', 
+                                coords: [35.7147, 139.7966], 
+                                desc: 'Najstarsza i najsłynniejsza świątynia w Tokio. Wielki czerwony lampion.',
+                                transport: 'Metro Oedo Line (Ryogoku -> Kuramae) + spacer 10 min.',
+                                food: 'Melonpan na Nakamise-dori',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Park Ueno', 
+                                coords: [35.7140, 139.7740], 
+                                desc: 'Wielki park, muzea i zoo. Dobre miejsce na spacer.',
+                                transport: 'Metro Ginza Line (Asakusa -> Ueno) - 5 min.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Yanaka Ginza', 
+                                coords: [35.7275, 139.7645], 
+                                desc: 'Stare Tokio. Klimat lat 50., koty i małe sklepiki.',
+                                transport: 'Spacer przez park Ueno (20 min) lub JR Yamanote (Ueno -> Nippori).',
+                                food: 'Menchi Katsu (Krokiet mięsny)',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Daikoku-yu Onsen', 
+                                coords: [35.7077, 139.8056], 
+                                desc: 'Tradycyjna łaźnia publiczna. Pamiętajcie o myciu przed wejściem!',
+                                transport: 'Taxi z Ueno/Yanaka (najszybciej) lub powrót do Ryogoku.',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd3', date: '24.03', title: 'CENTRUM & AKIBA', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Tsukiji Market', 
+                                coords: [35.6654, 139.7706], 
+                                desc: 'Stary targ rybny. Królestwo street foodu.',
+                                transport: 'Metro Oedo Line (Ryogoku -> Tsukijishijo) - bezpośrednio.',
+                                food: 'Jajko Tamago na patyku',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Pałac Cesarski', 
+                                coords: [35.6851, 139.7527], 
+                                desc: 'Siedziba Cesarza. Wchodzi się tylko do ogrodów wschodnich.',
+                                transport: 'Metro Hibiya Line (Tsukiji -> Hibiya) + spacer.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Akihabara', 
+                                coords: [35.7022, 139.7741], 
+                                desc: 'Dzielnica elektroniki, anime i gier. Neonowy oczopląs.',
+                                transport: 'JR Yamanote Line (Tokyo Sta. -> Akihabara).',
+                                food: 'CoCo Curry House',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd4', date: '25.03', title: 'SHIBUYA & SHINJUKU', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Gotokuji (Koty)', 
+                                coords: [35.6482, 139.6483], 
+                                desc: 'Świątynia z tysiącami figurek kotów maneki-neko.',
+                                transport: 'Skomplikowane: JR do Shinjuku -> Odakyu Line do Gotokuji.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Shimokitazawa', 
+                                coords: [35.6607, 139.6673], 
+                                desc: 'Dzielnica hipsterów, lumpeksów i kawy.',
+                                transport: 'Odakyu Line (z Gotokuji w stronę Shinjuku).',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Shibuya Crossing', 
+                                coords: [35.6595, 139.7004], 
+                                desc: 'Najsłynniejsze skrzyżowanie świata. Tłumy ludzi.',
+                                transport: 'Keio Inokashira Line (Shimokitazawa -> Shibuya) - 4 min.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Shinjuku (Kabukicho)', 
+                                coords: [35.6938, 139.7035], 
+                                desc: 'Dzielnica czerwonych latarni, Godzilli i barów.',
+                                transport: 'JR Yamanote (Shibuya -> Shinjuku).',
+                                food: 'Omoide Yokocho (Yakitori)',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd5', date: '26.03', title: 'FASHION WALK', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Meiji Shrine', 
+                                coords: [35.6764, 139.6993], 
+                                desc: 'Wielka świątynia w lesie w środku miasta.',
+                                transport: 'JR Yamanote do Harajuku.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Takeshita Street', 
+                                coords: [35.6710, 139.7030], 
+                                desc: 'Szaleństwo mody nastolatek. Kolorowo i tłoczno.',
+                                transport: 'Spacer z Meiji Shrine (obok).',
+                                food: 'Naleśnik z wystawki',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Daikanyama', 
+                                coords: [35.6490, 139.6995], 
+                                desc: 'Luksusowa dzielnica, super architektura (TSUTAYA Books).',
+                                transport: 'Spacer (20 min) lub Tokyu Toyoko Line.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Nakameguro', 
+                                coords: [35.6443, 139.6990], 
+                                desc: 'Kanał z wiśniami. Idealne na wieczorny drink.',
+                                transport: 'Spacer z Daikanyama (zejście w dół do rzeki).',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd6', date: '27.03', title: 'KAMAKURA', hotelKey: 'tokyo1',
+                        tasks: [
+                            { 
+                                name: 'Wielki Budda', 
+                                coords: [35.3168, 139.5361], 
+                                desc: 'Ogromny posąg Buddy na powietrzu. Ikona.',
+                                transport: 'Pociąg JR Yokosuka Line (Tokyo -> Kamakura) + kolejka Enoden.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Enoshima', 
+                                coords: [35.3016, 139.4814], 
+                                desc: 'Wyspa połączona mostem. Plaże, świątynie, widoki.',
+                                transport: 'Kolejka Enoden (Klimatyczna trasa wzdłuż morza).',
+                                food: 'Shirasu-don (ryż z rybkami)',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd7', date: '28.03', title: 'KIOTO START', hotelKey: 'kyoto',
+                        tasks: [
+                            { 
+                                name: 'Transfer do Kioto', 
+                                coords: [34.9858, 135.7588], 
+                                desc: 'Shinkansen Hikari/Nozomi. 2h 20min jazdy.',
+                                transport: 'Z Tokyo Station.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Kiyomizu-dera', 
+                                coords: [34.9948, 135.7850], 
+                                desc: 'Świątynia Czystej Wody na drewnianym tarasie.',
+                                transport: 'Taxi z hotelu (najlepiej) lub Bus 206.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Gion District', 
+                                coords: [35.0054, 135.7745], 
+                                desc: 'Dzielnica Gejsz. Stare domy machiya.',
+                                transport: 'Spacer w dół z Kiyomizu przez Sannenzaka.',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd8', date: '29.03', title: 'FUSHIMI INARI', hotelKey: 'kyoto',
+                        tasks: [
+                            { 
+                                name: 'Fushimi Inari', 
+                                coords: [34.9671, 135.7726], 
+                                desc: 'Tysiące czerwonych bram Torii. Idzie się w górę.',
+                                transport: 'Pociąg Keihan Line lub JR Nara Line (5 min jazdy).',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Nishiki Market', 
+                                coords: [35.0050, 135.7631], 
+                                desc: '"Kuchnia Kioto". Wąska ulica z jedzeniem.',
+                                transport: 'Powrót do centrum, metro do Shijo.',
+                                food: 'Wszystko na patyku',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd10', date: '31.03', title: 'NARA', hotelKey: 'kyoto',
+                        tasks: [
+                            { 
+                                name: 'Nara Park', 
+                                coords: [34.6850, 135.8430], 
+                                desc: 'Park pełen wolno żyjących jeleni. Można karmić.',
+                                transport: 'Pociąg Kintetsu Nara Line (40 min).',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Todai-ji', 
+                                coords: [34.6889, 135.8398], 
+                                desc: 'Największy drewniany budynek świata z wielkim Buddą.',
+                                transport: 'Spacer przez park.',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd11', date: '01.04', title: 'POWRÓT', hotelKey: 'tokyo2',
+                        tasks: [
+                            { 
+                                name: 'Powrót do Tokio', 
+                                coords: [35.6812, 139.7671], 
+                                desc: 'Shinkansen z powrotem.',
+                                transport: 'Z Kyoto Station.',
+                                expanded: false 
+                            },
+                            { 
+                                name: 'Check-in TOMI Hotel', 
+                                coords: [35.6650, 139.8700], 
+                                desc: 'Ostatnia baza noclegowa.',
+                                transport: 'Zależy gdzie jest hotel (Taxi).',
+                                expanded: false 
+                            }
+                        ]
+                    },
+                    { 
+                        id: 'd12', date: '06.04', title: 'WYLOT', hotelKey: 'tokyo2',
+                        tasks: [
+                            { 
+                                name: 'Narita Airport', 
+                                coords: [35.7719, 140.3906], 
+                                desc: 'Koniec wycieczki.',
+                                transport: 'Keisei Skyliner.',
+                                expanded: false 
+                            }
+                        ]
+                    }
+                ],
+
+                init() {
+                    this.map = L.map('map', {zoomControl: false}).setView([35.693, 139.792], 12);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(this.map);
+                    this.layerGroup = L.layerGroup().addTo(this.map);
+                    this.setDay(this.days[0]);
+                },
+
+                setDay(day) {
+                    this.activeDay = day.id;
+                    this.currentDayTitle = day.title;
+                    
+                    this.layerGroup.clearLayers();
+                    const bounds = [];
+                    const points = [];
+
+                    // Hotel
+                    const hotel = this.hotels[day.hotelKey];
+                    L.marker(hotel.coords, {
+                        icon: L.divIcon({html: '🏨', className: 'pin-hotel'})
+                    }).addTo(this.layerGroup);
+                    bounds.push(hotel.coords);
+                    points.push(hotel.coords);
+
+                    // Tasks
+                    day.tasks.forEach((t, i) => {
+                        if(t.coords) {
+                            L.marker(t.coords, {
+                                icon: L.divIcon({html: `<div>${i+1}</div>`, className: 'pin-std', iconSize: [24,24]})
+                            }).addTo(this.layerGroup);
+                            bounds.push(t.coords);
+                            points.push(t.coords);
+                        }
+                    });
+
+                    // Line
+                    if(points.length > 1) {
+                        L.polyline(points, {color: '#00f3ff', weight: 3, opacity: 0.6, dashArray: '5, 10'}).addTo(this.layerGroup);
+                    }
+
+                    if(bounds.length > 0) {
+                        this.map.flyToBounds(bounds, {padding: [50, 50], duration: 1});
+                    }
+                },
+
+                toggleTask(dayId, idx) {
+                    const day = this.days.find(d => d.id === dayId);
+                    day.tasks[idx].expanded = !day.tasks[idx].expanded;
+                    // Force refresh (AlpineJS reactivity trick if needed, usually auto)
+                },
+
+                nav(coords) {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}&travelmode=transit`, '_blank');
+                },
+
+                locateMe() {
+                    if(navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(p => {
+                            const loc = [p.coords.latitude, p.coords.longitude];
+                            L.circleMarker(loc, {radius: 8, color: '#39ff14', fillOpacity: 1}).addTo(this.layerGroup);
+                            this.map.setView(loc, 14);
+                        });
+                    } else alert("Włącz GPS!");
+                }
+            }
+        }
     </script>
 </body>
 </html>
