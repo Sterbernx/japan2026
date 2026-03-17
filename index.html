@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>JAPONIA V18 - HYBRID 3D</title>
+    <title>JAPONIA V21 ULTIMATE 3D</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
@@ -16,7 +16,7 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], hud: ['Rajdhani', 'sans-serif'] },
-                    colors: { cyber: '#00f3ff', vip: '#ffd700', void: '#050505', panel: '#111' }
+                    colors: { cyber: '#00f3ff', vip: '#ffd700', void: '#050505', panel: '#111', insta: '#e1306c' }
                 }
             }
         }
@@ -28,9 +28,12 @@
         #map { width: 100%; height: 100%; background: #000; }
         #content-scroll { position: fixed; top: 45vh; left: 0; width: 100%; height: 55vh; overflow-y: auto; background: #050505; z-index: 10; padding-bottom: 80px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
         .pin-std { background: #000; color: #00f3ff; border: 2px solid #00f3ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.8); width: 28px; height: 28px; }
-        .pin-star { background: #ffd700; color: #000; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; box-shadow: 0 0 20px rgba(255, 215, 0, 1); width: 32px; height: 32px; z-index: 100; }
-        .pin-hotel { font-size: 28px; filter: drop-shadow(0 0 10px #ff0055); text-align: center; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .pin-star { background: #e1306c; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 0 20px rgba(225, 48, 108, 0.8); width: 32px; height: 32px; z-index: 100; }
+        .pin-hotel { font-size: 28px; filter: drop-shadow(0 0 10px #ff0055); text-align: center; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 101; }
+        
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; letter-spacing: 0.05em; margin-right: 4px; margin-top: 4px; }
     </style>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -42,7 +45,7 @@
     <div id="map-container">
         <div id="map" wire:ignore></div>
         <div class="absolute top-3 left-3 z-[500] bg-black/80 backdrop-blur px-3 py-2 border-l-4 border-cyber pointer-events-none rounded-r-lg shadow-xl">
-            <div class="text-[10px] text-gray-400 font-hud tracking-widest uppercase">AKTYWNY CEL</div>
+            <div class="text-[10px] text-gray-400 font-hud tracking-widest uppercase">AKTYWNY DZIEŃ</div>
             <div class="text-sm font-bold text-cyber font-hud text-lg leading-none" x-text="currentDayTitle"></div>
         </div>
         <button @click="locateMe()" class="absolute bottom-3 right-3 z-[500] bg-black/80 p-3 rounded-full border border-cyber text-cyber shadow-[0_0_15px_#00f3ff] active:scale-90 transition">📍</button>
@@ -50,14 +53,18 @@
 
     <div id="content-scroll">
         <div class="p-2 space-y-4">
+            
+            <div class="bg-gray-900 border border-vip/50 rounded-lg p-3 mx-2 mb-4">
+                <div class="text-vip font-bold text-xs flex items-center gap-2">🛠️ INFO LOGISTYCZNE</div>
+                <div class="text-xs text-gray-300 mt-1">Zgodnie z rolką z Instagrama, na samym początku wyjazdu kupujecie w Don Quijote <b>Ashirila Sheet</b> (na stopy) i <b>MegRhythm Steam Leg Patch</b> (na łydki). Uratuje Wam to życie. Punkty z IG oznaczone są teraz tagami!</div>
+            </div>
+
             <template x-for="day in days" :key="day.id">
-                <div class="bg-panel border border-gray-800 transition-all duration-300 rounded-lg overflow-hidden" :class="activeDay === day.id ? 'border-cyber shadow-[0_0_15px_rgba(0,243,255,0.1)]' : 'opacity-60'">
+                <div class="bg-panel border border-gray-800 transition-all duration-300 rounded-lg overflow-hidden" :class="activeDay === day.id ? 'border-cyber shadow-[0_0_15px_rgba(0,243,255,0.2)]' : 'opacity-70'">
+                    
                     <div @click="setDay(day)" class="p-4 flex justify-between items-center cursor-pointer bg-gradient-to-r from-panel to-black">
                         <div>
-                            <div class="font-hud text-2xl font-bold flex items-center gap-2">
-                                <span x-text="day.date"></span>
-                                <span x-show="day.hasNew" class="text-vip text-sm">⭐</span>
-                            </div>
+                            <div class="font-hud text-2xl font-bold flex items-center gap-2" x-text="day.date"></div>
                             <div class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]" x-text="day.title"></div>
                         </div>
                         <div class="text-cyber text-xl transition-transform" :class="activeDay === day.id ? 'rotate-90' : ''">➤</div>
@@ -67,29 +74,49 @@
                         <div class="p-3 bg-cyber/5 text-[11px] text-cyber border-b border-gray-800 font-mono italic">
                             🏨 BAZA: <span x-text="hotels[day.hotelKey].name"></span>
                         </div>
+
                         <template x-for="(task, i) in day.tasks" :key="i">
-                            <div class="border-b border-gray-800 last:border-0 transition-colors hover:bg-white/5" :class="task.isNew ? 'bg-vip/5 border-l-2 border-vip' : ''">
+                            <div class="border-b border-gray-800 last:border-0 transition-colors hover:bg-white/5">
+                                
                                 <div @click="toggleTask(day.id, i)" class="p-4 cursor-pointer">
-                                    <div class="flex gap-4 items-center">
-                                        <div class="flex-none w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all" 
-                                             :class="task.isNew ? 'border-vip text-vip shadow-[0_0_10px_#ffd700]' : (task.expanded ? 'bg-cyber text-black border-cyber shadow-[0_0_10px_#00f3ff]' : 'border-gray-700 text-gray-500')">
-                                            <span x-text="task.isNew ? '⭐' : i+1"></span>
+                                    <div class="flex gap-4 items-start">
+                                        
+                                        <div class="flex-none w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm mt-1 transition-all" 
+                                             :class="task.tags.includes('insta') ? 'border-insta text-white bg-insta shadow-[0_0_10px_#e1306c]' : (task.expanded ? 'bg-cyber text-black border-cyber shadow-[0_0_10px_#00f3ff]' : 'border-gray-700 text-gray-500')">
+                                            <span x-text="task.tags.includes('insta') ? '📸' : i+1"></span>
                                         </div>
+                                        
                                         <div class="flex-1">
-                                            <div class="font-bold text-sm text-gray-100" :class="task.isNew ? 'text-vip' : ''" x-text="task.name"></div>
+                                            <div class="font-bold text-sm text-gray-100" x-text="task.name"></div>
+                                            
+                                            <div class="flex flex-wrap mt-1">
+                                                <template x-for="tag in task.tags" :key="tag">
+                                                    <span class="badge" :class="tagsConfig[tag].color">
+                                                        <span x-text="tagsConfig[tag].icon"></span>
+                                                        <span x-text="tagsConfig[tag].label"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+
+                                            <div class="text-[10px] mt-2 flex gap-2 text-gray-500">
+                                                <span x-show="!task.expanded">▼ Pokaż notatki</span>
+                                                <span x-show="task.expanded" class="text-cyber">▲ Zwiń</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div x-show="task.expanded" class="bg-gray-900/80 px-4 pb-4 border-l-4 ml-4 mb-2" :class="task.isNew ? 'border-vip' : 'border-cyber'">
+                                
+                                <div x-show="task.expanded" class="bg-gray-900/80 px-4 pb-4 border-l-4 ml-4 mb-2" :class="task.tags.includes('insta') ? 'border-insta' : 'border-cyber'">
                                     <div class="mb-3 pt-2">
-                                        <div class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="task.isNew ? 'text-vip/80' : 'text-gray-400'">NOTATKI / DOJAZD</div>
+                                        <div class="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400">SZCZEGÓŁY DOjazdu/INFO</div>
                                         <div class="text-sm text-gray-200 leading-snug" x-text="task.desc"></div>
                                     </div>
                                     <div class="flex gap-2">
-                                        <button x-show="task.coords" @click.stop="nav(task.coords)" class="flex-1 text-black font-bold text-xs py-2 rounded transition shadow-lg active:scale-95" :class="task.isNew ? 'bg-vip' : 'bg-cyber'">📍 GOOGLE MAPS</button>
-                                        <button x-show="task.food" @click.stop="alert('Tip: ' + task.food)" class="px-4 border font-bold text-xs py-2 rounded transition active:scale-95" :class="task.isNew ? 'border-vip text-vip' : 'border-vip text-vip'">🍔 GASTRO</button>
+                                        <button x-show="task.coords" @click.stop="nav(task.coords)" class="flex-1 text-black font-bold text-xs py-2 rounded transition shadow-lg active:scale-95" :class="task.tags.includes('insta') ? 'bg-insta text-white' : 'bg-cyber'">📍 MAPY GOOGLE</button>
+                                        <button x-show="task.food" @click.stop="alert('Tip Gastro: ' + task.food)" class="px-4 border font-bold text-xs py-2 rounded transition active:scale-95 border-red-500 text-red-500 hover:bg-red-500 hover:text-white">🥩 JEDZ</button>
                                     </div>
                                 </div>
+
                             </div>
                         </template>
                     </div>
@@ -102,69 +129,101 @@
     <script>
         function app() {
             return {
-                map: null, currentMarkers: [], activeDay: 'd1', currentDayTitle: 'Przylot',
+                map: null, currentMarkers: [], activeDay: 'd1', currentDayTitle: 'LĄDOWANIE',
+                
+                // KOORDYNATY HOTELI [DŁUGOŚĆ (Lng), SZEROKOŚĆ (Lat)]
                 hotels: {
                     tokyo1: { name: 'Galicia Ryogoku', coords: [139.7924, 35.6930] },
                     kyoto: { name: 'Le Lion d\'or', coords: [135.7700, 35.0080] },
                     tokyo2: { name: 'TOMI Hotel', coords: [139.8700, 35.6650] }
                 },
+
+                // SYSTEM TAGÓW Z ROLKI I PREFERENCJI
+                tagsConfig: {
+                    insta: { icon: '📸', label: 'Z ROLKI', color: 'bg-pink-600 text-white' },
+                    anime: { icon: '⚔️', label: 'ANIME', color: 'bg-purple-700 text-white' },
+                    view: { icon: '🌸', label: 'WIDOK', color: 'bg-emerald-600 text-white' },
+                    train: { icon: '🚆', label: 'POCIĄG', color: 'bg-blue-600 text-white' },
+                    food: { icon: '🥩', label: 'MIESO', color: 'bg-red-600 text-white' },
+                    mama: { icon: '🎁', label: 'DLA MAMY', color: 'bg-yellow-500 text-black' },
+                    boys: { icon: '👯', label: '3 CHŁOPA', color: 'bg-orange-500 text-black' }
+                },
+
                 days: [
-                    { id: 'd1', date: '22.03', title: 'PRZYLOT (TOKIO)', hotelKey: 'tokyo1', hasNew: false, tasks: [
-                        { name: 'Lądowanie NRT', coords: [140.3906, 35.7719], desc: 'Przylot ~20:00[cite: 2]. Odbierz Welcome Suica i wsiadaj w pociąg Keisei[cite: 3].', expanded: false },
-                        { name: 'Check-in Ryogoku', coords: [139.7924, 35.6930], desc: 'Wasza baza w Tokio[cite: 4]. Skocz do konbini po kurczaka i Stronga.', expanded: false }
+                    { id: 'd1', date: '22.03', title: 'LĄDOWANIE', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Przylot NRT & Keisei', coords: [140.3906, 35.7719], desc: 'Odbiór Welcome Suica z automatu i szybka ucieczka do miasta.', tags: ['train'], expanded: false },
+                        { name: 'Konbini Run (Ryogoku)', coords: [139.7924, 35.6930], desc: 'Zrzut bagaży. Idziecie we 3 po smażonego kurczaka i Strong Zero do sklepu.', tags: ['boys', 'food'], expanded: false }
                     ]},
-                    { id: 'd2', date: '23.03', title: 'ASAKUSA & UENO', hotelKey: 'tokyo1', hasNew: true, tasks: [
-                        { name: '⭐ Goshuincho dla Mamy!', coords: [139.7966, 35.7147], desc: 'Kup notes Goshuincho w Sensō-ji[cite: 7]. To unikalny prezent – kaligrafie z datami z każdej świątyni!', isNew: true, expanded: false },
-                        { name: 'Sensō-ji & Nakamise', coords: [139.7966, 35.7147], desc: 'Rano zwiedzanie świątyni [cite: 7] i bazaru[cite: 8]. Zobacz Asahi [cite: 9] i park Sumida[cite: 10].', expanded: false },
-                        { name: 'Ueno Park & Yanaka', coords: [139.7740, 35.7140], desc: 'Spacer przez Ueno [cite: 11] do Yanaka Ginza [cite: 12] i Nezu[cite: 13]. Wieczorem Onsen[cite: 14].', food: 'Krokiet Menchi Katsu w Yanaka.', expanded: false }
+                    { id: 'd2', date: '23.03', title: 'ASAKUSA & KULTURA', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Goshuincho w Sensō-ji', coords: [139.7966, 35.7147], desc: 'Kupujecie notes na pieczątki! Wpisują tam kaligrafie z datami.', tags: ['insta', 'mama', 'view'], expanded: false },
+                        { name: 'Asakusa Info Center', coords: [139.7963, 35.7107], desc: 'Z IG: Darmowy taras widokowy (8F) ze świetnym rzutem na świątynię i ulicę Nakamise.', tags: ['insta', 'view'], expanded: false },
+                        { name: 'Yanaka Ginza', coords: [139.7740, 35.7140], desc: 'Spacer przez park Ueno. Szukajcie chrupiących krokietów Menchi Katsu z czystą wołowiną.', food: 'Menchi Katsu (Wołowina)', tags: ['food'], expanded: false }
                     ]},
-                    { id: 'd3', date: '24.03', title: 'TSUKIJI & AKIBA', hotelKey: 'tokyo1', tasks: [
-                        { name: 'Tsukiji Market', coords: [139.7706, 35.6654], desc: 'Śniadanie na targu [cite: 17] i Hongan-ji[cite: 16]. Wagyu z grilla to mus!', food: 'Wagyu Skewer', expanded: false },
-                        { name: 'Ogrody Cesarskie', coords: [139.7527, 35.6851], desc: 'Wschodnie ogrody [cite: 18] i spacer Marunouchi[cite: 19]. Panorama z Caretta Shiodome[cite: 20].', expanded: false },
-                        { name: 'Akihabara', coords: [139.7741, 35.7022], desc: 'Centrum elektroniki i neonowy szał wieczorem[cite: 21].', expanded: false }
+                    { id: 'd3', date: '24.03', title: 'ANIME & TARASY TOKIO', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Tsukiji Market', coords: [139.7706, 35.6654], desc: 'Uważajcie na tłumy. Szukajcie szaszłyków z Wagyu opalanych palnikiem (omijać podroby).', food: 'Wagyu Skewers', tags: ['food'], expanded: false },
+                        { name: 'Kitte Marunouchi Rooftop', coords: [139.7656, 35.6800], desc: 'Rolka IG: Darmowy wjazd na 6 piętro galerii Kitte. Epicki widok na stację Tokio.', tags: ['insta', 'view'], expanded: false },
+                        { name: 'One Piece Stamp', coords: [139.7671, 35.6812], desc: 'Rolka IG: W Mugiwara Store na stacji Tokyo bijecie pamiątkową pieczątkę!', tags: ['insta', 'anime'], expanded: false },
+                        { name: 'Kościół Kanda (Chainsaw Man)', coords: [139.7561, 35.7001], desc: 'Rolka IG: Budka telefoniczna z Reze Arc i schody Onnazaka.', tags: ['insta', 'anime'], expanded: false },
+                        { name: 'Akihabara Arcade', coords: [139.7741, 35.7022], desc: 'Neony i granie we 3 w automaty.', tags: ['boys'], expanded: false }
                     ]},
-                    { id: 'd4', date: '25.03', title: 'WEST TOKYO NIGHT', hotelKey: 'tokyo1', tasks: [
-                        { name: 'Gotokuji & Shimokitazawa', coords: [139.6483, 35.6482], desc: 'Koty Maneki-neko [cite: 23] i hipsterskie Shimokitazawa[cite: 24].', expanded: false },
-                        { name: 'Shibuya Crossing & Sky', coords: [139.7004, 35.6595], desc: 'Skrzyżowanie [cite: 25] i Shibuya Sky[cite: 26]. Zrób rezerwację!', expanded: false },
-                        { name: 'Shinjuku Kabukicho', coords: [139.7035, 35.6938], desc: 'Godzilla, neony i Omoide Yokocho[cite: 28].', food: 'Kurczak Yakitori', expanded: false }
+                    { id: 'd4', date: '25.03', title: 'SHINJUKU JJK & SHIBUYA', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Suga Shrine (Your Name)', coords: [139.7228, 35.6854], desc: 'Rolka IG: Słynne schody z anime. Zróbcie sobie tam epicką fotkę.', tags: ['insta', 'anime'], expanded: false },
+                        { name: 'Shibuya Hikarie View', coords: [139.7032, 35.6590], desc: 'Rolka IG: Wjazd na 11. piętro. Super widok na Crossing bez płacenia i bez wielkich tłumów.', tags: ['insta', 'view'], expanded: false },
+                        { name: 'Shinjuku no Me (JJK)', coords: [139.6991, 35.6918], desc: 'Rolka IG: Oko z intra Jujutsu Kaisen.', tags: ['insta', 'anime'], expanded: false },
+                        { name: 'Omoide Yokocho', coords: [139.7035, 35.6938], desc: 'Yakitori w Kabukicho.', food: 'Czysty kurczak, upewnijcie się 2x przed zamówieniem', tags: ['food', 'boys'], expanded: false }
                     ]},
-                    { id: 'd5', date: '26.03', title: 'HARAJUKU CHILL', hotelKey: 'tokyo1', tasks: [
-                        { name: 'Meiji & Takeshita', coords: [139.6993, 35.6764], desc: 'Świątynia w lesie [cite: 30] i szaleństwo Harajuku[cite: 31, 32].', expanded: false },
-                        { name: 'Nakameguro Hanami', coords: [139.6990, 35.6443], desc: 'Wiśnie nad kanałem[cite: 34]. Wieczorem klimat jest nieziemski.', expanded: false }
+                    { id: 'd5', date: '26.03', title: 'HANKO & HARAJUKU', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Wyróbcie własne Hanko', coords: [139.7030, 35.6710], desc: 'Rolka IG: Zróbcie sobie własne, oficjalne japońskie pieczęcie z imionami.', tags: ['insta', 'mama', 'boys'], expanded: false },
+                        { name: 'Nakameguro Hanami', coords: [139.6990, 35.6443], desc: 'Wieczorny spacer z piwkiem nad rzeką w otoczeniu wiśni.', tags: ['view', 'boys'], expanded: false }
                     ]},
-                    { id: 'd6', date: '27.03', title: 'KAMAKURA & OCEAN', hotelKey: 'tokyo1', hasNew: true, tasks: [
-                        { name: '⭐ Shonan Monorail', coords: [139.5312, 35.3534], desc: 'Dojazd do oceanu pociągiem wiszącym pod szyną! Kosmiczne wrażenia.', isNew: true, expanded: false },
-                        { name: 'Kamakura Budda', coords: [139.5361, 35.3168], desc: 'Wielki Budda [cite: 36], Hasedera [cite: 37] i Hachimangu[cite: 38].', expanded: false },
-                        { name: 'Enoshima Sunset', coords: [139.4814, 35.3016], desc: 'Wyspa i zachód słońca nad oceanem[cite: 39, 40].', expanded: false }
+                    { id: 'd6', date: '27.03', title: 'KAMAKURA OCEAN', hotelKey: 'tokyo1', tasks: [
+                        { name: 'Shonan Monorail', coords: [139.5312, 35.3534], desc: 'Pociąg podwieszany! Pędzicie w powietrzu nad domami.', tags: ['train', 'view'], expanded: false },
+                        { name: 'Custom Pałeczki (Kamakura)', coords: [139.5524, 35.3192], desc: 'Rolka IG: Sklep "Chopstick & tableware" z darmowym grawerem na pałeczkach.', tags: ['insta', 'mama'], expanded: false },
+                        { name: 'Enoshima Sunset', coords: [139.4814, 35.3016], desc: 'Widok na ocean.', tags: ['view'], expanded: false }
                     ]},
-                    { id: 'd7', date: '28.03', title: 'KIOTO WSCHODNIE', hotelKey: 'kyoto', tasks: [
-                        { name: 'Shinkansen do Kioto', coords: [135.7588, 34.9858], desc: '2.5h pociągiem-pociskiem z Tokio[cite: 42].', expanded: false },
-                        { name: 'Kiyomizu-dera & Gion', coords: [135.7850, 34.9948], desc: 'Drewniany taras [cite: 43], Sannenzaka [cite: 44] i dzielnica Gejsz[cite: 45, 46].', expanded: false }
+                    { id: 'd7', date: '28.03', title: 'SHINKANSEN DO KIOTO', hotelKey: 'kyoto', tasks: [
+                        { name: 'Shinkansen do Kioto', coords: [135.7588, 34.9858], desc: 'Przesiadka. Wynajmijcie szafki, żeby nie gubić się z walizkami.', tags: ['train', 'boys'], expanded: false },
+                        { name: 'Kiyomizu-dera & Gion', coords: [135.7850, 34.9948], desc: 'Wieczorne zwiedzanie dzielnicy Gejsz.', tags: ['view'], expanded: false }
                     ]},
-                    { id: 'd8', date: '29.03', title: 'FUSHIMI INARI', hotelKey: 'kyoto', tasks: [
-                        { name: 'Fushimi Inari', coords: [135.7726, 34.9671], desc: 'Bramy Torii bardzo wcześnie rano[cite: 49]. Wideo call do Mamy ze szczytu!', expanded: false },
-                        { name: 'Nishiki Market', coords: [135.7631, 35.0050], desc: 'Odpoczynek [cite: 50] i spacer po targu[cite: 52].', expanded: false }
+                    { id: 'd8', date: '29.03', title: 'FUSHIMI & TRAVELER FACTORY', hotelKey: 'kyoto', tasks: [
+                        { name: 'Fushimi Inari', coords: [135.7726, 34.9671], desc: 'Świt! Koniecznie call do domu.', tags: ['view', 'mama'], expanded: false },
+                        { name: 'Traveler\'s Factory Kyoto', coords: [135.7601, 35.0062], desc: 'Rolka IG: Ukryty sklep w Kioto, darmowe pieczątki i genialne notesy.', tags: ['insta', 'mama'], expanded: false },
+                        { name: 'Nishiki Market', coords: [135.7631, 35.0050], desc: 'Gastro. Chrupiący kurczak karaage.', food: 'Karaage Chicken', tags: ['food'], expanded: false }
                     ]},
-                    { id: 'd10', date: '31.03', title: 'NARA JELONKI', hotelKey: 'kyoto', tasks: [
-                        { name: 'Nara Park', coords: [135.8327, 34.6853], desc: 'Karmienie jelonków [cite: 60] i Todai-ji[cite: 61].', expanded: false }
+                    { id: 'd9', date: '30.03', title: 'OSAKA BUNNY RUN', hotelKey: 'kyoto', tasks: [
+                        { name: 'Ukryta uliczka Dotonbori', coords: [135.5013, 34.6687], desc: 'Rolka IG: 30 min z Kioto, jedziecie zobaczyć neony Osaki z fotospotu.', tags: ['insta', 'view'], expanded: false },
+                        { name: 'Bunny Girls Izakaya', coords: [135.4870, 34.6955], desc: 'Rolka IG: Fukushima w Osace. Obsługują Bunny Girls, leją alkohol i grają z Wami w gry. Totalny chill.', tags: ['insta', 'boys', 'food'], expanded: false }
+                    ]},
+                    { id: 'd10', date: '31.03', title: 'JELONKI NARA', hotelKey: 'kyoto', tasks: [
+                        { name: 'Nara Park', coords: [135.8327, 34.6853], desc: 'Karmienie jelonków i spacer do Todai-ji.', tags: ['view'], expanded: false },
+                        { name: 'Nakatanidou Mochi', coords: [135.8282, 34.6816], desc: 'Rolka IG: Ekstremalnie szybkie ubijanie zielonego mochi.', food: 'Gorące Mochi z czerwoną fasolą', tags: ['insta', 'food'], expanded: false }
                     ]},
                     { id: 'd11', date: '01.04', title: 'POWRÓT TOKIO', hotelKey: 'tokyo2', tasks: [
-                        { name: 'Shinkansen', coords: [139.7671, 35.6812], desc: 'Powrót do bazy nr 2[cite: 64, 65].', expanded: false },
-                        { name: 'Check-in TOMI', coords: [139.8700, 35.6650], desc: 'Ostatni hotel i chill[cite: 67, 68].', expanded: false }
+                        { name: 'Powrót Shinkansenem', coords: [139.7671, 35.6812], desc: 'Jazda na wschód do TOMI Hotel.', tags: ['train'], expanded: false }
                     ]},
-                    { id: 'd12', date: '02.04', title: 'FUJI MISSION', hotelKey: 'tokyo2', hasNew: true, tasks: [
-                        { name: '⭐ Fuji Excursion', coords: [138.7684, 35.4984], desc: 'Limitowany pociąg pod samą Górę Fuji do Kawaguchiko. Kadry życia!', isNew: true, expanded: false }
+                    { id: 'd12', date: '02.04', title: 'GÓRA FUJI', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Fuji Excursion', coords: [138.7684, 35.4984], desc: 'Rolka IG: Limitowany pociąg bezpośrednio z Shinjuku nad Kawaguchiko z widokiem na Fuji.', tags: ['insta', 'train', 'view'], expanded: false }
                     ]},
-                    { id: 'd13', date: '03-06.04', title: 'FINAŁ & WYLOT', hotelKey: 'tokyo2', tasks: [
-                        { name: 'TeamLab & Odaiba', coords: [139.7754, 35.6249], desc: 'Muzeum cyfrowe [cite: 72] i ostatnie zakupy[cite: 71].', expanded: false },
-                        { name: 'Wylot NRT', coords: [140.3906, 35.7719], desc: 'Ostatnie spojrzenie na Skytree i pociąg na lotnisko[cite: 74].', expanded: false }
+                    { id: 'd13', date: '03.04', title: 'THEMED CAFE & WAGYU', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Kirby / Square Enix Cafe', coords: [139.8107, 35.7100], desc: 'Rolka IG: Kawki z motywem gier (np. na Skytree lub Shinjuku).', tags: ['insta', 'anime'], expanded: false },
+                        { name: 'Yakiniku Ushigoro (Ginza)', coords: [139.7665, 35.6735], desc: 'Rolka IG: Luksusowe Yakiniku. Kucharz grilluje Wagyu najwyższej jakości na Waszych oczach. Zero podrobów.', food: 'A5 Wagyu', tags: ['insta', 'food', 'boys'], expanded: false }
+                    ]},
+                    { id: 'd14', date: '04.04', title: 'LISY W ŚNIEGU', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Zao Fox Village', coords: [140.5312, 38.0408], desc: 'Rolka IG: Shinkansenem na północ! Genialne przeżycie i widok na urocze liski.', tags: ['insta', 'train', 'view'], expanded: false }
+                    ]},
+                    { id: 'd15', date: '05.04', title: 'CICHE TORII & TEAMLAB', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Hie-Shrine', coords: [139.7397, 35.6747], desc: 'Rolka IG: Ostatnia szansa na fotę w bramach Torii z dala od turystów.', tags: ['insta', 'view'], expanded: false },
+                        { name: 'TeamLab', coords: [139.7420, 35.6300], desc: 'Magia cyfrowa i pożegnalne zakupy na Odaibie.', tags: ['view'], expanded: false }
+                    ]},
+                    { id: 'd16', date: '06.04', title: 'OSTATNI DZIEŃ', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Kantsu-ji (Piesek Shiba)', coords: [139.7288, 35.7029], desc: 'Rolka IG: Rano idziecie zobaczyć pięknego psa i dojazd Skylinerem na lotnisko Narita.', tags: ['insta', 'train'], expanded: false }
                     ]}
                 ],
+
                 init() {
                     this.map = new maplibregl.Map({
-                        container: 'map',
-                        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json', 
-                        center: [139.7924, 35.6930], zoom: 12, pitch: 60, attributionControl: false
+                        container: 'map', style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json', 
+                        center: [139.7656, 35.6800], zoom: 12, pitch: 60, attributionControl: false
                     });
                     this.map.on('load', () => { this.setDay(this.days[0]); });
                 },
@@ -183,37 +242,29 @@
                         if(t.coords) {
                             const lngLat = [t.coords[0], t.coords[1]];
                             const el = document.createElement('div'); 
-                            el.className = t.isNew ? 'pin-star' : 'pin-std';
-                            el.innerHTML = t.isNew ? '⭐' : i + 1;
+                            el.className = t.tags.includes('insta') ? 'pin-star' : 'pin-std';
+                            el.innerHTML = t.tags.includes('insta') ? '📸' : i + 1;
                             const marker = new maplibregl.Marker({element: el}).setLngLat(lngLat).addTo(this.map);
                             this.currentMarkers.push(marker); bounds.extend(lngLat);
                         }
                     });
 
-                    // 🚀 DYNAMICZNY WIDOK:
-                    // Obliczamy dystans (północ-południe). Jeśli > 50km, widok pionowy.
                     const dist = bounds.getNorth() - bounds.getSouth();
                     const targetPitch = dist > 0.5 ? 0 : 65; 
-
                     this.map.fitBounds(bounds, { padding: 60, speed: 1.2 });
-                    setTimeout(() => {
-                        this.map.easeTo({ pitch: targetPitch, duration: 800 });
-                    }, 1000);
+                    setTimeout(() => { this.map.easeTo({ pitch: targetPitch, duration: 800 }); }, 1000);
                 },
                 toggleTask(dayId, idx) { 
                     const day = this.days.find(d => d.id === dayId);
                     day.tasks.forEach((t, i) => { if(i !== idx) t.expanded = false; });
                     day.tasks[idx].expanded = !day.tasks[idx].expanded;
                 },
-                nav(coords) { 
-                    // Poprawka współrzędnych dla Google Maps: Lat, Lng
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}&travelmode=transit`, '_blank');
-                },
+                nav(coords) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}&travelmode=transit`, '_blank'); },
                 locateMe() {
                     if(navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(p => {
                             const lngLat = [p.coords.longitude, p.coords.latitude];
-                            const el = document.createElement('div'); el.style.cssText='width:16px;height:16px;background:#39ff14;border-radius:50%;box-shadow:0 0 15px #39ff14;border:2px solid white;';
+                            const el = document.createElement('div'); el.style.cssText='width:16px;height:16px;background:#00f3ff;border-radius:50%;box-shadow:0 0 15px #00f3ff;border:2px solid white;';
                             new maplibregl.Marker({element: el}).setLngLat(lngLat).addTo(this.map);
                             this.map.flyTo({center: lngLat, zoom: 15, pitch: 65});
                         });
