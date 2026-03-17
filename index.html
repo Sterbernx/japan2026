@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>JAPONIA V25 ANTI-TRAP 3D</title>
+    <title>JAPONIA V26 OSTATECZNY WYLOT 3D</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
@@ -191,9 +191,10 @@
                         { name: 'Kitte Marunouchi Rooftop', coords: [139.7656, 35.6800], desc: 'Darmowy wjazd na dach galerii. Zachód słońca z widokiem na pociągi.', tags: ['insta', 'view'], expanded: false },
                         { name: 'Check-in TOMI Hotel', coords: [139.8700, 35.6650], desc: 'Odbieracie graty ze stacji i jedziecie wrzucić na luz w nowej bazie.', tags: ['boys'], expanded: false }
                     ]},
-                    { id: 'd12', date: '02.04', title: 'SHIMOKITA & PANORAMA', hotelKey: 'tokyo2', tasks: [
+                    { id: 'd12', date: '02.04', title: 'SHIMOKITA & PANORAMY', hotelKey: 'tokyo2', tasks: [
                         { name: 'Gotokuji (Świątynia Kotów)', coords: [139.6483, 35.6482], desc: 'Tysiące kotów Maneki-neko. Koniecznie nagrajcie film dla Mamy.', tags: ['view', 'mama'], expanded: false },
                         { name: 'Shimokitazawa', coords: [139.6673, 35.6607], desc: 'Wymiatający klimat vintage. 🚨 PUŁAPKA: Takeshita Street w Harajuku to w weekend katorga, tu macie luz i płyty winylowe.', tags: ['insta', 'view', 'trap'], expanded: false },
+                        { name: 'Shibuya Hikarie View', coords: [139.7032, 35.6590], desc: 'Darmowy wjazd na 11. piętro. 🚨 PUŁAPKA: Sam dół skrzyżowania w godzinach szczytu grozi zadeptaniem.', tags: ['insta', 'view', 'trap'], expanded: false },
                         { name: 'Tokyo Met Gov Building', coords: [139.6917, 35.6894], desc: 'Nocna panorama z 45. piętra. 🚨 PUŁAPKA: Tokyo Skytree jest drogie i obłożone turystami. Wjazd tu jest DARMOWY i równie wspaniały!', tags: ['insta', 'view', 'trap'], expanded: false }
                     ]},
                     { id: 'd13', date: '03.04', title: 'TRAMWAJ & WAGYU', hotelKey: 'tokyo2', tasks: [
@@ -204,13 +205,10 @@
                         { name: 'Tokyo Joypolis', coords: [139.7711, 35.6298], desc: 'Wbijacie we 3 do największego krytego parku rozrywki SEGA! Salony VR i arcade.', tags: ['boys'], expanded: false },
                         { name: 'TeamLab & Gundam', coords: [139.7420, 35.6300], desc: 'Muzeum cyfrowe TeamLab i wielki pomnik robota przed galerią DiverCity.', tags: ['view'], expanded: false }
                     ]},
-                    { id: 'd15', date: '05.04', title: 'IKEBUKURO & WIDOK', hotelKey: 'tokyo2', tasks: [
-                        { name: 'Shibuya Hikarie View', coords: [139.7032, 35.6590], desc: 'Darmowy wjazd na 11. piętro. 🚨 PUŁAPKA: Sam dół skrzyżowania w godzinach szczytu wieczorem grozi zadeptaniem.', tags: ['insta', 'view', 'trap'], expanded: false },
-                        { name: 'Ikebukuro Sunshine City', coords: [139.7198, 35.7289], desc: 'Mają tu największe Pokemon Center Mega Tokyo.', tags: ['anime', 'boys'], expanded: false }
-                    ]},
-                    { id: 'd16', date: '06.04', title: 'OSTATNI DZIEŃ', hotelKey: 'tokyo2', tasks: [
-                        { name: 'Kantsu-ji (Shiba)', coords: [139.7288, 35.7029], desc: 'Odwiedziny u śpiącego pieska przed lotem.', tags: ['insta'], expanded: false },
-                        { name: 'Torby z 3COINS & Wylot', coords: [140.3906, 35.7719], desc: 'Kupujecie wielkie torby w 3COINS, pakujecie graty i Skyliner na Naritę.', tags: ['insta', 'train'], expanded: false }
+                    { id: 'd15', date: '05.04', title: 'IKEBUKURO & WYLOT', hotelKey: 'tokyo2', tasks: [
+                        { name: 'Kantsu-ji (Shiba)', coords: [139.7288, 35.7029], desc: 'Szybkie odwiedziny u śpiącego pieska z samego rana.', tags: ['insta'], expanded: false },
+                        { name: 'Ikebukuro Sunshine City', coords: [139.7198, 35.7289], desc: 'Mają tu największe Pokemon Center Mega Tokyo. Idealne miejsce na ostateczne zakupy pamiątek.', tags: ['anime', 'boys'], expanded: false },
+                        { name: 'Torby z 3COINS & Wylot', coords: [140.3906, 35.7719], desc: 'Kupujecie wielkie torby lotnicze w 3COINS za 550 JPY, pakujecie pamiątki i pędzicie Skylinerem na lotnisko Narita.', tags: ['insta', 'train'], expanded: false }
                     ]}
                 ],
                 init() {
@@ -218,7 +216,7 @@
                         container: 'map', style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json', 
                         center: [139.7656, 35.6800], zoom: 12, pitch: 60, attributionControl: false
                     });
-                    this.map.on('load', () => { this.setDay(this.days[10]); }); // Start na 1 kwietnia
+                    this.map.on('load', () => { this.setDay(this.days[14]); }); // Start na 5 kwietnia
                 },
                 setDay(day) {
                     this.activeDay = day.id; this.currentDayTitle = day.title;
